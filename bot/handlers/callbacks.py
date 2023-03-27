@@ -38,16 +38,14 @@ async def open_repair_option(callback: types.CallbackQuery, callback_data: dict,
         ans, kb = get_keyboard(STATES_LIST[-2])
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
-        await callback.answer()
-        add_state(await state.get_state())
-        print(STATES_LIST)
+        delete_state()
     else:
         await UserStatesGroup.repair_item.set()
         add_state(await state.get_state())
         ans, kb = get_repair_item_keyboard(callback_data['id'])
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
-        await callback.answer()
+    await callback.answer()
 
 
 @dp.callback_query_handler(CallbackData('repair_item', 'id', 'action').filter(), state=UserStatesGroup.repair_item)
@@ -57,11 +55,10 @@ async def make_an_order(callback: types.CallbackQuery, callback_data: dict, stat
         ans, kb = get_keyboard(STATES_LIST[-2])
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
-        await callback.answer()
-        add_state(await state.get_state())
-        print(STATES_LIST)
+        delete_state()
     else:
         pass
+    await callback.answer()
 
 
 # Ветка аксессуаров

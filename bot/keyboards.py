@@ -12,6 +12,10 @@ def add_state(state):
     STATES_LIST.append(state)
 
 
+def delete_state():
+    STATES_LIST.pop(-1)
+
+
 def get_keyboard(state):
     if state == 'UserStatesGroup:start':
         return get_user_start_keyboard()
