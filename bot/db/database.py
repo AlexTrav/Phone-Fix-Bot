@@ -14,23 +14,29 @@ class DataBase:
             self.cursor.execute(f"SELECT * FROM {kwargs['table']}")
         return self.cursor.fetchall()
 
+    # USER
+
     def check_user(self, **kwargs):
         self.cursor.execute('SELECT * FROM users')
         users = self.cursor.fetchall()
         if not users:
-            self.cursor.execute(f'INSERT INTO users(id, user_name, fl_name) VALUES ({kwargs["user_id"]}, "{kwargs["user_name"]}", "{kwargs["fl_name"]}")')
+            self.cursor.execute(
+                f'INSERT INTO users(id, user_name, fl_name) VALUES ({kwargs["user_id"]}, "{kwargs["user_name"]}", "{kwargs["fl_name"]}")')
             self.conn.commit()
         else:
             self.cursor.execute(f'SELECT * FROM users WHERE id = {kwargs["user_id"]}')
             user = self.cursor.fetchall()
             if not user:
-                self.cursor.execute(f'INSERT INTO users(id, user_name, fl_name) VALUES ({kwargs["user_id"]}, "{kwargs["user_name"]}", "{kwargs["fl_name"]}")')
+                self.cursor.execute(
+                    f'INSERT INTO users(id, user_name, fl_name) VALUES ({kwargs["user_id"]}, "{kwargs["user_name"]}", "{kwargs["fl_name"]}")')
                 self.conn.commit()
 
     def get_status_id(self, **kwargs):
         self.cursor.execute(f'SELECT status_id FROM users WHERE id = {kwargs["user_id"]}')
         status_id = self.cursor.fetchall()[0][0]
         return status_id
+
+    # MANAGER
 
 
 db = DataBase()
