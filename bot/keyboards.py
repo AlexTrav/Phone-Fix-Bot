@@ -16,11 +16,13 @@ def delete_state():
     STATES_LIST.pop(-1)
 
 
-def get_keyboard(state):
+def get_keyboard(state, **kwargs):
     if state == 'UserStatesGroup:start':
         return get_user_start_keyboard()
     if state == 'UserStatesGroup:repair':
         return get_repairs_catalog_keyboard()
+    if state == 'UserStatesGroup:repair_item':
+        return get_repair_item_keyboard(kwargs['service_id'])
 
 
 # USER
@@ -62,6 +64,16 @@ def get_repair_item_keyboard(service_id):
     ])
     return answer, repair_item_keyboard
 
+
+def get_phone_models_keyboard():
+    cb = CallbackData('models', 'id', 'action')
+    answer = 'Выберите модель телефона:'
+    phone_models_keyboard = InlineKeyboardMarkup(row_width=1)
+    buttons = []
+    for model in db.get_data(table='phone_models'):
+        buttons.append(InlineKeyboardButton(text=model[1], callback_data=cb.new(id=model[0], action='category')))
+    phone_models_keyboard.add(*buttons).add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, phone_models_keyboard
 
 # Ветка аксессуаров
 

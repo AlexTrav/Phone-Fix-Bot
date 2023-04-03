@@ -15,6 +15,8 @@ async def set_state():
         await UserStatesGroup.start.set()
     if state == 'UserStatesGroup:repair':
         await UserStatesGroup.repair.set()
+    if state == 'UserStatesGroup:repair_item':
+        await UserStatesGroup.repair_item.set()
 
 
 # USER
@@ -57,7 +59,34 @@ async def make_an_order(callback: types.CallbackQuery, callback_data: dict, stat
                                          reply_markup=kb)
         delete_state()
     else:
-        pass
+        await UserStatesGroup.to_order.set()
+        async with state.proxy() as data:
+            data['repair_id'] = callback_data['id']
+        add_state(await state.get_state())
+        ans, kb = get_phone_models_keyboard()
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('models', 'id', 'action').filter(), state=UserStatesGroup.to_order)
+async def model_selection(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        async with state.proxy() as data:
+            ans, kb = get_keyboard(STATES_LIST[-2], service_id=data['repair_id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    else:
+        async with state.proxy() as data:
+            answer = db.insert_orders_repair(user_id=callback.from_user.id, repair_id=data['repair_id'], model_id=callback_data['id'])
+        await callback.answer(answer)
+        await UserStatesGroup.start.set()
+        add_state(await state.get_state())
+        ans, kb = get_user_start_keyboard()
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
     await callback.answer()
 
 
