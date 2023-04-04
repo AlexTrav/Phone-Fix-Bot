@@ -41,6 +41,8 @@ class DataBase:
         status_id = self.cursor.fetchall()[0][0]
         return status_id
 
+    # Ветка ремонта
+
     # Добавить запись в заказы услуг
     def insert_orders_repair(self, **kwargs):
         self.cursor.execute(f'SELECT * FROM orders_repair WHERE user_id = {kwargs["user_id"]}')
@@ -51,6 +53,8 @@ class DataBase:
             return 'Заказ оформлен!'
         else:
             return 'Нельзя заказывать больше трёх услуг!'
+
+    # Ветка аксессуаров
 
     # Добавление/удаление желаемого пользователя
     def insert_on_delete_desired(self, **kwargs):
@@ -67,6 +71,10 @@ class DataBase:
             return True
         else:
             return False
+
+    # Ветка заказов
+
+    # Ветка поиска
 
     # MANAGER
 
