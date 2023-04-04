@@ -34,6 +34,10 @@ def get_keyboard(state, **kwargs):
         return get_repair_item_keyboard(kwargs['service_id'])
     if state == 'UserStatesGroup:to_order':
         return get_phone_models_category_keyboard()
+    if state == 'UserStatesGroup:accessories_catalog':
+        return get_accessories_catalog_keyboard()
+    if state == 'UserStatesGroup:accessories':
+        return get_accessories_keyboard(kwargs['catalog_id'])
 
 
 # USER
@@ -104,6 +108,44 @@ def get_phone_models_keyboard(category_model_id):
 
 
 # Ветка аксессуаров
+
+# Клавиатура каталога аксессуаров
+def get_accessories_catalog_keyboard():
+    cb = CallbackData('accessories_catalog', 'id', 'action')
+    answer = 'Выберите каталог аксессуаров:'
+    accessories_catalog_keyboard = InlineKeyboardMarkup(row_width=1)
+    buttons = []
+    for catalog in db.get_data(table='accessories_catalog'):
+        buttons.append(InlineKeyboardButton(text=catalog[1], callback_data=cb.new(id=catalog[0], action='catalog')))
+    accessories_catalog_keyboard.add(*buttons).add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, accessories_catalog_keyboard
+
+
+# Клавиатура выбора аксессуара
+def get_accessories_keyboard(catalog_id):
+    cb = CallbackData('accessories', 'id', 'action')
+    answer = 'Выберите аксессуар:'
+    accessories_keyboard = InlineKeyboardMarkup(row_width=1)
+    buttons = []
+    for accessory in db.get_data(table='accessories', where=1, op1='catalog_id', op2=catalog_id):
+        buttons.append(InlineKeyboardButton(text=accessory[2], callback_data=cb.new(id=accessory[0], action='catalog')))
+    accessories_keyboard.add(*buttons).add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, accessories_keyboard
+
+
+# Клавиатура и описание аксессуара
+def get_accessory_keyboard(accessory_id, user_id):
+    cb = CallbackData('accessory', 'id', 'action')
+    accessory = db.get_data(table='accessories', where=1, op1='id', op2=accessory_id)[0]
+    answer = f'Аксессуар: {accessory[2]}\nОписание: {accessory[3]}\nХарактеристики: {accessory[4]}\nЦена: {accessory[5]}'
+    accessory_keyboard = InlineKeyboardMarkup(row_width=1)
+    if db.is_accessory_in_user(user_id=user_id, accessory_id=accessory_id):
+        accessory_keyboard.add(InlineKeyboardButton(text='Убрать из желаемого', callback_data=cb.new(id=accessory[0], action='delete_desired')))
+    else:
+        accessory_keyboard.add(InlineKeyboardButton(text='Добавить в желаемое', callback_data=cb.new(id=accessory[0], action='add_desired')))
+    accessory_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, accessory_keyboard, accessory[6]
+
 
 # Ветка заказов
 

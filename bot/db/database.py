@@ -52,6 +52,22 @@ class DataBase:
         else:
             return 'Нельзя заказывать больше трёх услуг!'
 
+    # Добавление/удаление желаемого пользователя
+    def insert_on_delete_desired(self, **kwargs):
+        if kwargs['action'] == 'add_desired':
+            self.cursor.execute(f'INSERT INTO desired(user_id, accessory_id) VALUES ({kwargs["user_id"]}, {kwargs["accessory_id"]})')
+        else:
+            self.cursor.execute(f'DELETE FROM desired WHERE user_id = {kwargs["user_id"]} AND accessory_id = {kwargs["accessory_id"]}')
+        self.conn.commit()
+
+    # Проверка на наличие желаемого у пользователя
+    def is_accessory_in_user(self, **kwargs):
+        self.cursor.execute(f'SELECT * FROM desired WHERE user_id = {kwargs["user_id"]} AND accessory_id = {kwargs["accessory_id"]}')
+        if self.cursor.fetchall():
+            return True
+        else:
+            return False
+
     # MANAGER
 
 
