@@ -38,6 +38,12 @@ def get_keyboard(state, **kwargs):
         return get_accessories_catalog_keyboard()
     if state == 'UserStatesGroup:accessories':
         return get_accessories_keyboard(kwargs['catalog_id'])
+    if state == 'UserStatesGroup:select_orders':
+        return get_select_orders_keyboard()
+    if state == 'UserStatesGroup:desired':
+        return get_desired_keyboard(kwargs['user_id'])
+    if state == 'UserStatesGroup:orders_repair':
+        return get_orders_repair(kwargs['user_id'])
 
 
 # USER
@@ -137,7 +143,7 @@ def get_accessories_keyboard(catalog_id):
 def get_accessory_keyboard(accessory_id, user_id):
     cb = CallbackData('accessory', 'id', 'action')
     accessory = db.get_data(table='accessories', where=1, op1='id', op2=accessory_id)[0]
-    answer = f'Аксессуар: {accessory[2]}\nОписание: {accessory[3]}\nХарактеристики: {accessory[4]}\nЦена: {accessory[5]}'
+    answer = f'Аксессуар: {accessory[2]}\nОписание: {accessory[3]}\nХарактеристики: {accessory[4]}\nЦена: {accessory[5]}₸'
     accessory_keyboard = InlineKeyboardMarkup(row_width=1)
     if db.is_accessory_in_user(user_id=user_id, accessory_id=accessory_id):
         accessory_keyboard.add(InlineKeyboardButton(text='Убрать из желаемого', callback_data=cb.new(id=accessory[0], action='delete_desired')))
@@ -148,6 +154,60 @@ def get_accessory_keyboard(accessory_id, user_id):
 
 
 # Ветка заказов
+
+# Клавиатура выбора заказов
+def get_select_orders_keyboard():
+    cb = CallbackData('select_orders', 'action')
+    answer = 'Выберите тип заказов:'
+    select_orders_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='Заказы услуг на ремонт', callback_data=cb.new(action='orders_repair'))],
+        [InlineKeyboardButton(text='Желаемое', callback_data=cb.new(action='desired'))],
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
+    ])
+    return answer, select_orders_keyboard
+
+
+# Клавиатура желаемого user-а
+def get_desired_keyboard(user_id):
+    cb = CallbackData('desired', 'id', 'action')
+    answer = 'Выберите желаемое:'
+    desired_keyboard = InlineKeyboardMarkup(row_width=1)
+    buttons = []
+    for desire in db.get_data(table='desired', where=1, op1='user_id', op2=user_id):
+        accessory = db.get_data(table='accessories', where=1, op1='id', op2=desire[2])[0]
+        buttons.append(InlineKeyboardButton(text=accessory[2], callback_data=cb.new(id=accessory[0], action='catalog')))
+    desired_keyboard.add(*buttons).add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, desired_keyboard
+
+
+# Клавиатура заказов услуг на ремонт
+def get_orders_repair(user_id):
+    cb = CallbackData('orders_repair', 'id', 'action')
+    answer = 'Выберите заказ на услугу:'
+    orders_repair_keyboard = InlineKeyboardMarkup(row_width=1)
+    buttons = []
+    for order_repair in db.get_data(table='orders_repair', where=1, op1='user_id', op2=user_id):
+        repair = db.get_data(table='repairs_catalog', where=1, op1='id', op2=order_repair[2])[0]
+        buttons.append(InlineKeyboardButton(text=repair[1], callback_data=cb.new(id=order_repair[0], action='catalog')))
+    orders_repair_keyboard.add(*buttons).add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, orders_repair_keyboard
+
+
+# Клавиатура заказа услуг на ремонт
+def get_order_repair(order_id):
+    cb = CallbackData('order_repair', 'id', 'action')
+    order_repair = db.get_data(table='orders_repair', where=1, op1='id', op2=order_id)[0]
+    repair = db.get_data(table='repairs_catalog', where=1, op1='id', op2=order_repair[2])[0]
+    model = db.get_data(table='phone_models', where=1, op1='id', op2=order_repair[3])[0]
+    is_processed = ['Не просмотрен', 'Просмотрен'][order_repair[4]]
+    is_completed = ['Не выполнен', 'Выполнен'][order_repair[5]]
+    answer = f'Заказ под номером: {order_repair[0]}\nЗаказанная услуга: {repair[1]}\nНа модель: {model[2]}\nЦена услуги: {repair[3]}₸\nСтатус просмотра: {is_processed}\nСтатус выполнения: {is_completed}'
+    order_repair_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='Отменить', callback_data=cb.new(id=order_repair[0], action='cancel_order'))],
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back'))]
+    ])
+    return answer, order_repair_keyboard
+
 
 # Ветка поиска
 

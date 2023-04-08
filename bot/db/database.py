@@ -74,6 +74,12 @@ class DataBase:
 
     # Ветка заказов
 
+    # Отмена заказа услуг ремонта
+
+    def cancel_order_repair(self, **kwargs):
+        self.cursor.execute(f'DELETE FROM orders_repair WHERE id = {kwargs["order_id"]}')
+        self.conn.commit()
+
     # Ветка поиска
 
     # MANAGER

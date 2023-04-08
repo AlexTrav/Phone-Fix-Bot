@@ -14,6 +14,7 @@ from bot.db.database import db
 async def start_cmd(message: types.Message, state: FSMContext):
     db.check_user(user_id=message.from_user.id, user_name=message.from_user.username, fl_name=message.from_user.first_name + ' ' + message.from_user.last_name)
     status_id = db.get_status_id(user_id=message.from_user.id)
+    delete_all_states()
     # USER
     if status_id == 1:
         await UserStatesGroup.start.set()
