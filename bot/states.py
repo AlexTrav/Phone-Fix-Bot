@@ -26,10 +26,16 @@ class UserStatesGroup(StatesGroup):
     order_repair = State()
 
     # Ветка поиска
-    search = State()
+    select_search = State()
+
+    search_repairs = State()
+    found_repair = State()
+
+    search_accessories = State()
+    found_accessory = State()
 
     # Ветка о нас
-    about = State()
+    about_module = State()
 
 
 # Класс состояний менеджера

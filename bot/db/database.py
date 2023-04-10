@@ -82,6 +82,18 @@ class DataBase:
 
     # Ветка поиска
 
+    # Нахождение услуг ремонта по наименованию
+    def get_found_repairs_data(self, **kwargs):
+        self.cursor.execute(f'SELECT * FROM repairs_catalog WHERE `name_lc` LIKE "%{kwargs["search_query"].lower()}%"')
+        found_answers = self.cursor.fetchall()
+        return found_answers
+
+    # Нахождение аксессуаров по наименованию
+    def get_found_accessories_data(self, **kwargs):
+        self.cursor.execute(f'SELECT * FROM accessories WHERE `name_lc` LIKE "%{kwargs["search_query"].lower()}%"')
+        found_answers = self.cursor.fetchall()
+        return found_answers
+
     # MANAGER
 
 

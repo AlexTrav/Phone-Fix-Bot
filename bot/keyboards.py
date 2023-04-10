@@ -26,6 +26,9 @@ def delete_all_states():
 
 # Отправить клавиатуру в зависимости от состояния
 def get_keyboard(state, **kwargs):
+
+    # USER
+
     if state == 'UserStatesGroup:start':
         return get_user_start_keyboard()
     if state == 'UserStatesGroup:repair':
@@ -44,6 +47,16 @@ def get_keyboard(state, **kwargs):
         return get_desired_keyboard(kwargs['user_id'])
     if state == 'UserStatesGroup:orders_repair':
         return get_orders_repair(kwargs['user_id'])
+    if state == 'UserStatesGroup:select_search':
+        return get_select_search_keyboard()
+    if state == 'UserStatesGroup:search_repairs':
+        return get_search_repairs_keyboard()
+    if state == 'UserStatesGroup:search_accessories':
+        return get_search_accessories_keyboard()
+    if state == 'UserStatesGroup:found_repair':
+        return get_repair_item_keyboard(kwargs['service_id'])
+
+    # MANAGER
 
 
 # USER
@@ -54,8 +67,8 @@ def get_user_start_keyboard():
     start_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
         [InlineKeyboardButton(text='🛠 Ремонт телефонов 📱', callback_data='repairs_catalog')],
         [InlineKeyboardButton(text='Аксессуары 📲', callback_data='accessories_catalog')],
-        [InlineKeyboardButton(text='Заказы 📝', callback_data='orders')],
-        [InlineKeyboardButton(text='Поиск 🔍', callback_data='search')],
+        [InlineKeyboardButton(text='Заказы 📝', callback_data='select_orders')],
+        [InlineKeyboardButton(text='Поиск 🔍', callback_data='select_search')],
         [InlineKeyboardButton(text='О нас 👤', callback_data='about')]
     ])
     return answer, start_keyboard
@@ -160,8 +173,8 @@ def get_select_orders_keyboard():
     cb = CallbackData('select_orders', 'action')
     answer = 'Выберите тип заказов:'
     select_orders_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
-        [InlineKeyboardButton(text='Заказы услуг на ремонт', callback_data=cb.new(action='orders_repair'))],
-        [InlineKeyboardButton(text='Желаемое', callback_data=cb.new(action='desired'))],
+        [InlineKeyboardButton(text='📝 Заказы услуг на ремонт 🛠', callback_data=cb.new(action='orders_repair'))],
+        [InlineKeyboardButton(text='📝 Желаемое 📲', callback_data=cb.new(action='desired'))],
         [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
     ])
     return answer, select_orders_keyboard
@@ -211,13 +224,93 @@ def get_order_repair(order_id):
 
 # Ветка поиска
 
+# Клавиатура выбора поиска
+def get_select_search_keyboard():
+    cb = CallbackData('select_search', 'action')
+    answer = 'Выберите тип поиска:'
+    select_search_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='🔍 Поиск услуги на ремонт 🛠', callback_data=cb.new(action='search_repair'))],
+        [InlineKeyboardButton(text='🔍 Поиск аксессуара 📲', callback_data=cb.new(action='search_accessory'))],
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
+    ])
+    return answer, select_search_keyboard
+
+
+# Клавиатура поиска услуг ремонта
+def get_search_repairs_keyboard():
+    cb = CallbackData('search_repairs', 'action')
+    answer = 'Введите название услуги ремонта следующим сообщением:'
+    search_repairs_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
+    ])
+    return answer, search_repairs_keyboard
+
+
+# Клавиатура поиска аксессуаров
+def get_search_accessories_keyboard():
+    cb = CallbackData('search_accessories', 'action')
+    answer = 'Введите название аксессуара следующим сообщением:'
+    search_accessories_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
+    ])
+    return answer, search_accessories_keyboard
+
+
+# Клавиатура найденных услуг ремонта
+def get_found_repairs_keyboard(search_query):
+    cb = CallbackData('found_repairs', 'id', 'action')
+    found_repairs = db.get_found_repairs_data(search_query=search_query)
+    if len(found_repairs) > 0:
+        answer = f'Найдено совпадений: {len(found_repairs)}'
+        found_repairs_keyboard = InlineKeyboardMarkup(row_width=1)
+        buttons = []
+        for found_repair in found_repairs:
+            buttons.append(InlineKeyboardButton(text=found_repair[1], callback_data=cb.new(id=found_repair[0], action='repair')))
+        found_repairs_keyboard.add(*buttons).add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    else:
+        answer = 'К сожалению совпадений не найдено'
+        found_repairs_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back'))]
+        ])
+    return answer, found_repairs_keyboard
+
+
+# Клавиатура найденных аксессуаров
+def get_found_accessories_keyboard(search_query):
+    cb = CallbackData('found_accessories', 'id', 'action')
+    found_accessories = db.get_found_accessories_data(search_query=search_query)
+    if len(found_accessories) > 0:
+        answer = f'Найдено совпадений: {len(found_accessories)}'
+        found_accessories_keyboard = InlineKeyboardMarkup(row_width=1)
+        buttons = []
+        for found_accessory in found_accessories:
+            buttons.append(InlineKeyboardButton(text=found_accessory[2], callback_data=cb.new(id=found_accessory[0], action='repair')))
+        found_accessories_keyboard.add(*buttons).add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    else:
+        answer = 'К сожалению совпадений не найдено'
+        found_accessories_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back'))]
+        ])
+    return answer, found_accessories_keyboard
+
+
 # Ветка о нас
+
+# Клавиатура модуля "О нас"
+def get_about_keyboard():
+    cb = CallbackData('about', 'action')
+    answer = 'Телеграм бот создан в целях выполнения дипломного проекта.\nГлавный разработчик: Абдукодиров Даврон.'
+    about_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='Связь', url='https://t.me/abdukodiiirov')],
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
+    ])
+    return answer, about_keyboard
 
 
 # MANAGER
 
 def get_manager_start_keyboard():
     answer = 'Менеджер! Добро пожаловать в Phone Fix Bot!'
-    start_manager_ikm = InlineKeyboardMarkup(inline_keyboard=[
+    manager_start_keyboard = InlineKeyboardMarkup(inline_keyboard=[
     ])
-    return answer, start_manager_ikm
+    return answer, manager_start_keyboard
