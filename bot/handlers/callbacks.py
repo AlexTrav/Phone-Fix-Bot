@@ -3,7 +3,7 @@ from aiogram.dispatcher import FSMContext
 
 from bot.loader import dp
 
-from bot.states import UserStatesGroup  # , ManagerStatesGroup
+from bot.states import UserStatesGroup, ManagerStatesGroup
 from bot.keyboards import *
 
 
@@ -62,7 +62,7 @@ async def open_repairs_catalog(callback: types.CallbackQuery, state: FSMContext)
 async def open_repair_option(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         await set_state()
-        ans, kb = get_keyboard(STATES_LIST[-2])
+        ans, kb = get_keyboard(STATES_LIST[-2], user_id=callback.from_user.id)
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
         delete_state()
@@ -128,7 +128,7 @@ async def model_selection(callback: types.CallbackQuery, callback_data: dict, st
         delete_all_states()
         await UserStatesGroup.start.set()
         add_state(await state.get_state())
-        ans, kb = get_user_start_keyboard()
+        ans, kb = get_user_start_keyboard(callback.from_user.id)
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
     await callback.answer()
@@ -152,7 +152,7 @@ async def open_accessories_catalog(callback: types.CallbackQuery, state: FSMCont
 async def open_accessories(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         await set_state()
-        ans, kb = get_keyboard(STATES_LIST[-2])
+        ans, kb = get_keyboard(STATES_LIST[-2], user_id=callback.from_user.id)
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
         delete_state()
@@ -176,6 +176,14 @@ async def open_accessory(callback: types.CallbackQuery, callback_data: dict, sta
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
         delete_state()
+    elif callback_data['action'] == 'sort_default' or callback_data['action'] == 'sort_asc' or callback_data['action'] == 'sort_desc':
+        answer = set_sorting_answer(callback_data['action'])
+        if answer[-1] != '!':
+            async with state.proxy() as data:
+                ans, kb = get_accessories_keyboard(data['catalog_id'])
+            await callback.message.edit_text(text=ans,
+                                             reply_markup=kb)
+        await callback.answer(answer)
     else:
         await UserStatesGroup.accessory.set()
         add_state(await state.get_state())
@@ -226,7 +234,7 @@ async def open_select_orders(callback: types.CallbackQuery, state: FSMContext):
 async def select_orders(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         await set_state()
-        ans, kb = get_keyboard(STATES_LIST[-2])
+        ans, kb = get_keyboard(STATES_LIST[-2], user_id=callback.from_user.id)
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
         delete_state()
@@ -303,7 +311,7 @@ async def select_order_repair(callback: types.CallbackQuery, callback_data: dict
     await callback.answer()
 
 
-# Просмотр заказа услуги на ремонт
+# Заказ услуги на ремонт
 @dp.callback_query_handler(CallbackData('order_repair', 'id', 'action').filter(), state=UserStatesGroup.order_repair)
 async def order_repair(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'back':
@@ -340,7 +348,7 @@ async def open_select_search(callback: types.CallbackQuery, state: FSMContext):
 async def select_search(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         await set_state()
-        ans, kb = get_keyboard(STATES_LIST[-2])
+        ans, kb = get_keyboard(STATES_LIST[-2], user_id=callback.from_user.id)
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
         delete_state()
@@ -473,10 +481,19 @@ async def open_about(callback: types.CallbackQuery, state: FSMContext):
 async def back_about(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'back':
         await set_state()
-        ans, kb = get_keyboard(STATES_LIST[-2])
+        ans, kb = get_keyboard(STATES_LIST[-2], user_id=callback.from_user.id)
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
         delete_state()
+
+
+# Войти как мэнэджер
+@dp.callback_query_handler(text='login_manager', state=UserStatesGroup.start)
+async def open_about(callback: types.CallbackQuery):
+    delete_all_states()
+    db.change_status_id(user_id=callback.from_user.id, status_id=2)
+    await callback.answer('Вы успешно вошли как мэнэджер!')
+    await callback.message.delete()
 
 
 # MANAGER

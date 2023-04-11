@@ -17,6 +17,11 @@ class DataBase:
             self.cursor.execute(f"SELECT * FROM {kwargs['table']}")
         return self.cursor.fetchall()
 
+    # Поменять status_id у пользователя
+    def change_status_id(self, **kwargs):
+        self.cursor.execute(f'UPDATE users SET status_id = {kwargs["status_id"]} WHERE id = {kwargs["user_id"]}')
+        self.conn.commit()
+
     # USER
 
     # Проверка существования user-а в бд
@@ -55,6 +60,11 @@ class DataBase:
             return 'Нельзя заказывать больше трёх услуг!'
 
     # Ветка аксессуаров
+
+    def get_accessories(self, **kwargs):
+        self.cursor.execute(f'SELECT * FROM accessories WHERE catalog_id = {kwargs["catalog_id"]} ' + kwargs['order_by'])
+        accessories = self.cursor.fetchall()
+        return accessories
 
     # Добавление/удаление желаемого пользователя
     def insert_on_delete_desired(self, **kwargs):

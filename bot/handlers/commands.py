@@ -19,7 +19,7 @@ async def start_cmd(message: types.Message, state: FSMContext):
     if status_id == 1:
         await UserStatesGroup.start.set()
         add_state(await state.get_state())
-        ans, kb = get_user_start_keyboard()
+        ans, kb = get_user_start_keyboard(message.from_user.id)
         await bot.send_message(chat_id=message.from_user.id,
                                text=ans,
                                reply_markup=kb)
@@ -29,5 +29,5 @@ async def start_cmd(message: types.Message, state: FSMContext):
         add_state(state.get_state())
         ans, kb = get_manager_start_keyboard()
         await bot.send_message(chat_id=message.from_user.id,
-                               text=kb,
-                               reply_markup=ans)
+                               text=ans,
+                               reply_markup=kb)

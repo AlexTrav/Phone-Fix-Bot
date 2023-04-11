@@ -7,6 +7,8 @@ from bot.db.database import db
 
 # Список последних состояний
 STATES_LIST = []
+# Переменная для сотртировки
+SORTING = ''
 
 
 # Добавить состояние
@@ -30,7 +32,7 @@ def get_keyboard(state, **kwargs):
     # USER
 
     if state == 'UserStatesGroup:start':
-        return get_user_start_keyboard()
+        return get_user_start_keyboard(kwargs['user_id'])
     if state == 'UserStatesGroup:repair':
         return get_repairs_catalog_keyboard()
     if state == 'UserStatesGroup:repair_item':
@@ -62,7 +64,7 @@ def get_keyboard(state, **kwargs):
 # USER
 
 # Клавиатура команды "start"
-def get_user_start_keyboard():
+def get_user_start_keyboard(user_id):
     answer = 'Добро пожаловать в Phone Fix Bot!'
     start_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
         [InlineKeyboardButton(text='🛠 Ремонт телефонов 📱', callback_data='repairs_catalog')],
@@ -71,7 +73,17 @@ def get_user_start_keyboard():
         [InlineKeyboardButton(text='Поиск 🔍', callback_data='select_search')],
         [InlineKeyboardButton(text='О нас 👤', callback_data='about')]
     ])
+    if user_id in get_permissions_id():
+        start_keyboard.add(InlineKeyboardButton(text='Войти как мэнэджер 🧑‍💻', callback_data='login_manager'))
     return answer, start_keyboard
+
+
+# Вернуть список ключей сотрудников
+def get_permissions_id():
+    permissions_id = []
+    for permission in db.get_data(table='permissions'):
+        permissions_id.append(permission[0])
+    return permissions_id
 
 
 # Ветка ремонта
@@ -146,10 +158,38 @@ def get_accessories_keyboard(catalog_id):
     answer = 'Выберите аксессуар:'
     accessories_keyboard = InlineKeyboardMarkup(row_width=1)
     buttons = []
-    for accessory in db.get_data(table='accessories', where=1, op1='catalog_id', op2=catalog_id):
+    for accessory in db.get_accessories(catalog_id=catalog_id, order_by=SORTING):
         buttons.append(InlineKeyboardButton(text=accessory[2], callback_data=cb.new(id=accessory[0], action='catalog')))
-    accessories_keyboard.add(*buttons).add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    accessories_keyboard.add(*buttons)
+    accessories_keyboard.add(InlineKeyboardButton(text='📋 Отсортировать по умолчанию 📋', callback_data=cb.new(id=-1, action='sort_default')))
+    accessories_keyboard.add(InlineKeyboardButton(text='⬆️ Отсортировать по возрастанию цены 💵', callback_data=cb.new(id=-1, action='sort_asc')))
+    accessories_keyboard.add(InlineKeyboardButton(text='⬇️ Отсортировать по убыванию цены 💵', callback_data=cb.new(id=-1, action='sort_desc')))
+    accessories_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
     return answer, accessories_keyboard
+
+
+# Установка сортировки
+def set_sorting_answer(action):
+    global SORTING
+    if action == 'sort_default':
+        if SORTING == '':
+            answer = 'Сортировка по умолчанию уже выбрана!'
+        else:
+            SORTING = ''
+            answer = 'Выбрана сортировка по умолчанию'
+    elif action == 'sort_asc':
+        if SORTING == 'ORDER BY cost ASC':
+            answer = 'Сортировка по возрастанию цены уже выбрана!'
+        else:
+            SORTING = 'ORDER BY cost ASC'
+            answer = 'Выбрана сортировка по возрастанию'
+    else:
+        if SORTING == 'ORDER BY cost DESC':
+            answer = 'Сортировка по убыванию цены уже выбрана!'
+        else:
+            SORTING = 'ORDER BY cost DESC'
+            answer = 'Выбрана сортировка по убыванию цены'
+    return answer
 
 
 # Клавиатура и описание аксессуара
@@ -312,5 +352,6 @@ def get_about_keyboard():
 def get_manager_start_keyboard():
     answer = 'Менеджер! Добро пожаловать в Phone Fix Bot!'
     manager_start_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text='Выйти', callback_data='exit')]
     ])
     return answer, manager_start_keyboard
