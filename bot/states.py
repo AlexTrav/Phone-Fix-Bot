@@ -40,5 +40,19 @@ class UserStatesGroup(StatesGroup):
 
 # Класс состояний менеджера
 class ManagerStatesGroup(StatesGroup):
+    # Начало
     start = State()
 
+    # Ветка услуг ремонта
+    repairs_catalog = State()
+    repair_item = State()
+
+    add_repair = State()
+    update_repair = State()
+    update_field_repair = State()
+
+    # Ветка аксессуаров
+
+    # Ветка пользователей
+
+    # Ветка документов

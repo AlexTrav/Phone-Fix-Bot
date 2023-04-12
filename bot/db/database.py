@@ -106,6 +106,32 @@ class DataBase:
 
     # MANAGER
 
+    # Ветка услуг ремонта
+
+    # Добавление услуги ремонта
+    def add_repair(self, **kwargs):
+        self.cursor.execute(f'INSERT INTO repairs_catalog(name, description, cost, name_lc) VALUES ("{kwargs["name"]}", "{kwargs["description"]}", "{kwargs["cost"]}", "{kwargs["name"].lower()}")')
+        self.conn.commit()
+
+    # Удаление услуги на ремонт
+    def delete_repair(self, **kwargs):
+        self.cursor.execute(f'DELETE FROM repairs_catalog WHERE id = {kwargs["repair_id"]}')
+        self.conn.commit()
+
+    # Смена значения поля услуги ремонта
+    def update_repair(self, **kwargs):
+        if kwargs['field'] == 'name':
+            self.cursor.execute(f'UPDATE repairs_catalog SET name = "{kwargs["new_value"]}", name_lc = "{kwargs["new_value"].lower()}" WHERE id = {kwargs["repair_id"]}')
+        else:
+            self.cursor.execute(f'UPDATE repairs_catalog SET {kwargs["field"]} = "{kwargs["new_value"]}" WHERE id = {kwargs["repair_id"]}')
+        self.conn.commit()
+
+    # Ветка аксессуаров
+
+    # Ветка пользователей
+
+    # Ветка документов
+
 
 # Экземпляр базы данных
 db = DataBase()

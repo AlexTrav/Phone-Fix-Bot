@@ -25,9 +25,11 @@ async def start_cmd(message: types.Message, state: FSMContext):
                                reply_markup=kb)
     # MANAGER
     elif status_id == 2:
+        await message.delete()
         await ManagerStatesGroup.start.set()
-        add_state(state.get_state())
+        add_state(await state.get_state())
         ans, kb = get_manager_start_keyboard()
         await bot.send_message(chat_id=message.from_user.id,
                                text=ans,
                                reply_markup=kb)
+

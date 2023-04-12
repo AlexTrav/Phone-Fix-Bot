@@ -23,32 +23,36 @@ def delete_state():
 
 # Удалить все состояния
 def delete_all_states():
-    STATES_LIST.clear()
+    if not STATES_LIST:
+        STATES_LIST.clear()
 
 
 # Отправить клавиатуру в зависимости от состояния
 def get_keyboard(state, **kwargs):
 
     # USER
-
     if state == 'UserStatesGroup:start':
         return get_user_start_keyboard(kwargs['user_id'])
+    # Ветка услуг ремонта
     if state == 'UserStatesGroup:repair':
         return get_repairs_catalog_keyboard()
     if state == 'UserStatesGroup:repair_item':
         return get_repair_item_keyboard(kwargs['service_id'])
     if state == 'UserStatesGroup:to_order':
         return get_phone_models_category_keyboard()
+    # Ветка аксессуаров
     if state == 'UserStatesGroup:accessories_catalog':
         return get_accessories_catalog_keyboard()
     if state == 'UserStatesGroup:accessories':
         return get_accessories_keyboard(kwargs['catalog_id'])
+    # Ветка заказов
     if state == 'UserStatesGroup:select_orders':
         return get_select_orders_keyboard()
     if state == 'UserStatesGroup:desired':
         return get_desired_keyboard(kwargs['user_id'])
     if state == 'UserStatesGroup:orders_repair':
         return get_orders_repair(kwargs['user_id'])
+    # Ветка поиска
     if state == 'UserStatesGroup:select_search':
         return get_select_search_keyboard()
     if state == 'UserStatesGroup:search_repairs':
@@ -59,6 +63,20 @@ def get_keyboard(state, **kwargs):
         return get_repair_item_keyboard(kwargs['service_id'])
 
     # MANAGER
+    if state == 'ManagerStatesGroup:start':
+        return get_manager_start_keyboard()
+    # Ветка услуг ремонта
+    if state == 'ManagerStatesGroup:repairs_catalog':
+        return get_repairs_catalog_manager_keyboard()
+    if state == 'ManagerStatesGroup:repair_item':
+        return get_repair_item_manager_keyboard(kwargs['repair_id'])
+    if state == 'ManagerStatesGroup:update_repair':
+        return get_update_repair_keyboard()
+    # Ветка аксессуаров
+
+    # Ветка пользователей
+
+    # Ветка документов
 
 
 # USER
@@ -349,9 +367,87 @@ def get_about_keyboard():
 
 # MANAGER
 
+# Клавиатура команды start
 def get_manager_start_keyboard():
     answer = 'Менеджер! Добро пожаловать в Phone Fix Bot!'
     manager_start_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text='Выйти', callback_data='exit')]
+        [InlineKeyboardButton(text='Услуги ремонта 🛠', callback_data='repairs_catalog')],
+        [InlineKeyboardButton(text='Аксессуары 📲', callback_data='accessories')],
+        [InlineKeyboardButton(text='Пользователи 👤', callback_data='users')],
+        [InlineKeyboardButton(text='Документы 📑', callback_data='documents')],
+        [InlineKeyboardButton(text='Выйти 🚪', callback_data='exit')]
     ])
     return answer, manager_start_keyboard
+
+
+# Ветка услуг ремонта
+
+# Клавиатура услуг ремонта manager-а
+def get_repairs_catalog_manager_keyboard():
+    cb = CallbackData('repairs_catalog', 'id', 'action')
+    answer = 'Каталог услуг на ремонт\nВыберите действие:'
+    repairs_catalog_keyboard = InlineKeyboardMarkup(row_width=1)
+    buttons = []
+    i = 0
+    for repair in db.get_data(table='repairs_catalog'):
+        buttons.append(InlineKeyboardButton(text=repair[1], callback_data=cb.new(id=repair[0], action='category')))
+        i += 1
+    repairs_catalog_keyboard.add(*buttons)
+    repairs_catalog_keyboard.add(InlineKeyboardButton(text='Добавить услугу ремонта ➕', callback_data=cb.new(id=-2, action='add')))
+    repairs_catalog_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, repairs_catalog_keyboard
+
+
+# Клавиатура услуги ремонта manager-а
+def get_repair_item_manager_keyboard(repair_id):
+    cb = CallbackData('repair_item', 'id', 'action')
+    repair = db.get_data(table='repairs_catalog', where=1, op1='id', op2=repair_id)[0]
+    answer = f'''Наименование услуги: {repair[1]}; \nОписание услуги: {repair[2]}; \nЦена услуги: {repair[3]}₸.'''.lstrip(' ')
+    repair_item_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='Редактировать ✏️', callback_data=cb.new(id=repair[0], action='update'))],
+        [InlineKeyboardButton(text='Удалить ✖️', callback_data=cb.new(id=repair[0], action='delete'))],
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back'))]
+    ])
+    return answer, repair_item_keyboard
+
+
+# Клавиатура добавление услуги ремонта
+def get_add_repair_item_keyboard():
+    cb = CallbackData('repair_item', 'action')
+    answer = 'Добавление услуги на ремонт\nВведите наименование; описание; цену следующим сообщением:\nКаждый параметр с новой строки, всего 3 параметра'
+    add_repair_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
+    ])
+    return answer, add_repair_keyboard
+
+
+# Клавиатура выбора поля на редактирование услуги ремонта
+def get_update_repair_keyboard():
+    cb = CallbackData('update_repair', 'action')
+    answer = 'Выберите поле для редактирования услуги ремонта'
+    update_repair_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='Наименование', callback_data=cb.new(action='name'))],
+        [InlineKeyboardButton(text='Описание', callback_data=cb.new(action='description'))],
+        [InlineKeyboardButton(text='Цена', callback_data=cb.new(action='cost'))],
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
+    ])
+    return answer, update_repair_keyboard
+
+
+# Клавиатура смены значения поля услуги ремонта
+def get_update_field_repair_keyboard(action):
+    cb = CallbackData('update_field_repair', 'action')
+    answer = f'Введите новое значение для поля "{action}", следующим сообщением:'
+    update_field_repair_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
+    ])
+    return answer, update_field_repair_keyboard
+
+
+# Ветка аксессуаров
+
+
+# Ветка пользователей
+
+
+# Ветка документов

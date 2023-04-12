@@ -12,24 +12,27 @@ from bot.keyboards import *
 async def set_state():
 
     # USER
-
     state = STATES_LIST[-2]
     if state == 'UserStatesGroup:start':
         await UserStatesGroup.start.set()
+    # Ветка услуг ремонта
     if state == 'UserStatesGroup:repair':
         await UserStatesGroup.repair.set()
     if state == 'UserStatesGroup:repair_item':
         await UserStatesGroup.repair_item.set()
+    # Ветка аксессуаров
     if state == 'UserStatesGroup:accessories_catalog':
         await UserStatesGroup.accessories_catalog.set()
     if state == 'UserStatesGroup:accessories':
         await UserStatesGroup.accessories.set()
+    # Ветка заказов
     if state == 'UserStatesGroup:select_orders':
         await UserStatesGroup.select_orders.set()
     if state == 'UserStatesGroup:desired':
         await UserStatesGroup.desired.set()
     if state == 'UserStatesGroup:orders_repair':
         await UserStatesGroup.orders_repair.set()
+    # Ветка поиска
     if state == 'UserStatesGroup:select_search':
         await UserStatesGroup.select_search.set()
     if state == 'UserStatesGroup:search_repairs':
@@ -40,6 +43,20 @@ async def set_state():
         await UserStatesGroup.found_repair.set()
 
     # MANAGER
+    if state == 'ManagerStatesGroup:start':
+        await ManagerStatesGroup.start.set()
+    # Ветка услуг ремонта
+    if state == 'ManagerStatesGroup:repairs_catalog':
+        await ManagerStatesGroup.repairs_catalog.set()
+    if state == 'ManagerStatesGroup:repair_item':
+        await ManagerStatesGroup.repair_item.set()
+    if state == 'ManagerStatesGroup:update_repair':
+        await ManagerStatesGroup.update_repair.set()
+    # Ветка аксессуаров
+
+    # Ветка пользователей
+
+    # Ветка документов
 
 
 # USER
@@ -341,6 +358,7 @@ async def open_select_search(callback: types.CallbackQuery, state: FSMContext):
     ans, kb = get_select_search_keyboard()
     await callback.message.edit_text(text=ans,
                                      reply_markup=kb)
+    await callback.answer()
 
 
 # Выбрать категорию поиска
@@ -376,6 +394,7 @@ async def back_search_repairs(callback: types.CallbackQuery, callback_data: dict
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
         delete_state()
+    await callback.answer()
 
 
 # Вернуться из начала поиска аксессуаров
@@ -387,6 +406,7 @@ async def back_search_accessories(callback: types.CallbackQuery, callback_data: 
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
         delete_state()
+    await callback.answer()
 
 
 # Открыть услугу из поиска услуг
@@ -404,6 +424,7 @@ async def open_found_repair(callback: types.CallbackQuery, callback_data: dict, 
         ans, kb = get_repair_item_keyboard(callback_data['id'])
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
+    await callback.answer()
 
 
 # Открыть аксессуар из поиска аксессуаров
@@ -422,6 +443,7 @@ async def open_found_accessory(callback: types.CallbackQuery, callback_data: dic
         await callback.message.answer_photo(photo=photo,
                                             caption=ans,
                                             reply_markup=kb)
+    await callback.answer()
 
 
 # Найденная услуга
@@ -474,6 +496,7 @@ async def open_about(callback: types.CallbackQuery, state: FSMContext):
     ans, kb = get_about_keyboard()
     await callback.message.edit_text(text=ans,
                                      reply_markup=kb)
+    await callback.answer()
 
 
 # Вернуться из модуля "О нас"
@@ -485,6 +508,7 @@ async def back_about(callback: types.CallbackQuery, callback_data: dict):
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
         delete_state()
+    await callback.answer()
 
 
 # Войти как мэнэджер
@@ -494,6 +518,136 @@ async def open_about(callback: types.CallbackQuery):
     db.change_status_id(user_id=callback.from_user.id, status_id=2)
     await callback.answer('Вы успешно вошли как мэнэджер!')
     await callback.message.delete()
+    await callback.answer()
 
 
 # MANAGER
+
+# Ветка услуг ремонта
+
+# Открыть услуги ремонта
+@dp.callback_query_handler(text='repairs_catalog', state=ManagerStatesGroup.start)
+async def open_repairs_catalog(callback: types.CallbackQuery, state: FSMContext):
+    await ManagerStatesGroup.repairs_catalog.set()
+    add_state(await state.get_state())
+    ans, kb = get_repairs_catalog_manager_keyboard()
+    await callback.message.edit_text(text=ans,
+                                     reply_markup=kb)
+    await callback.answer()
+
+
+# Выбрать / Добавить услугу ремонта
+@dp.callback_query_handler(CallbackData('repairs_catalog', 'id', 'action').filter(), state=ManagerStatesGroup.repairs_catalog)
+async def repairs_catalog(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    elif callback_data['action'] == 'add':
+        await ManagerStatesGroup.add_repair.set()
+        add_state(await state.get_state())
+        ans, kb = get_add_repair_item_keyboard()
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    else:
+        await ManagerStatesGroup.repair_item.set()
+        add_state(await state.get_state())
+        ans, kb = get_repair_item_manager_keyboard(callback_data['id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    await callback.answer()
+
+
+# Вернуться из добавление услуги ремонта
+@dp.callback_query_handler(CallbackData('repair_item', 'action').filter(), state=ManagerStatesGroup.add_repair)
+async def back_add_repair(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    await callback.answer()
+
+
+# Удаление / Выбор редактирования услуги ремонта
+@dp.callback_query_handler(CallbackData('repair_item', 'id', 'action').filter(), state=ManagerStatesGroup.repair_item)
+async def back_add_repair(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    elif callback_data['action'] == 'delete':
+        db.delete_repair(repair_id=callback_data['id'])
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+        await callback.answer('Услуга ремонта успешно удалена!')
+    else:
+        await ManagerStatesGroup.update_repair.set()
+        add_state(await state.get_state())
+        async with state.proxy() as data:
+            data['repair_id'] = callback_data['id']
+        ans, kb = get_update_repair_keyboard()
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    await callback.answer()
+
+
+# Выбор поля на редактирование услуги ремонта
+@dp.callback_query_handler(CallbackData('update_repair', 'action').filter(), state=ManagerStatesGroup.update_repair)
+async def select_field_update_repair(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        async with state.proxy() as data:
+            ans, kb = get_keyboard(STATES_LIST[-2], repair_id=data['repair_id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    else:
+        await ManagerStatesGroup.update_field_repair.set()
+        add_state(await state.get_state())
+        async with state.proxy() as data:
+            data['field'] = callback_data['action']
+        ans, kb = get_update_field_repair_keyboard(callback_data['action'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    await callback.answer()
+
+
+# Вернуться из редактирования услуги ремонта
+@dp.callback_query_handler(CallbackData('update_field_repair', 'action').filter(), state=ManagerStatesGroup.update_field_repair)
+async def back_add_repair(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    await callback.answer()
+
+
+# Ветка аксессуаров
+
+
+# Ветка пользователей
+
+
+# Ветка документов
+
+
+# Ветка выхода
+
+# Выйти из режима мэнэджера
+@dp.callback_query_handler(text='exit', state=ManagerStatesGroup.start)
+async def exit_manager(callback: types.CallbackQuery):
+    delete_all_states()
+    db.change_status_id(user_id=callback.from_user.id, status_id=1)
+    await callback.answer('Вы успешно вышли!')
+    await callback.message.delete()
+    await callback.answer()
