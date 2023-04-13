@@ -51,7 +51,7 @@ def get_keyboard(state, **kwargs):
     if state == 'UserStatesGroup:desired':
         return get_desired_keyboard(kwargs['user_id'])
     if state == 'UserStatesGroup:orders_repair':
-        return get_orders_repair(kwargs['user_id'])
+        return get_orders_repair_keyboard(kwargs['user_id'])
     # Ветка поиска
     if state == 'UserStatesGroup:select_search':
         return get_select_search_keyboard()
@@ -72,6 +72,8 @@ def get_keyboard(state, **kwargs):
         return get_repair_item_manager_keyboard(kwargs['repair_id'])
     if state == 'ManagerStatesGroup:update_repair':
         return get_update_repair_keyboard()
+    if state == 'ManagerStatesGroup:orders_repair':
+        return get_orders_repair_manager_keyboard()
     # Ветка аксессуаров
 
     # Ветка пользователей
@@ -252,7 +254,7 @@ def get_desired_keyboard(user_id):
 
 
 # Клавиатура заказов услуг на ремонт
-def get_orders_repair(user_id):
+def get_orders_repair_keyboard(user_id):
     cb = CallbackData('orders_repair', 'id', 'action')
     answer = 'Выберите заказ на услугу:'
     orders_repair_keyboard = InlineKeyboardMarkup(row_width=1)
@@ -265,7 +267,7 @@ def get_orders_repair(user_id):
 
 
 # Клавиатура заказа услуг на ремонт
-def get_order_repair(order_id):
+def get_order_repair_keyboard(order_id):
     cb = CallbackData('order_repair', 'id', 'action')
     order_repair = db.get_data(table='orders_repair', where=1, op1='id', op2=order_id)[0]
     repair = db.get_data(table='repairs_catalog', where=1, op1='id', op2=order_repair[2])[0]
@@ -372,7 +374,7 @@ def get_manager_start_keyboard():
     answer = 'Менеджер! Добро пожаловать в Phone Fix Bot!'
     manager_start_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text='Услуги ремонта 🛠', callback_data='repairs_catalog')],
-        [InlineKeyboardButton(text='Аксессуары 📲', callback_data='accessories')],
+        [InlineKeyboardButton(text='Аксессуары 📲', callback_data='accessories_catalog')],
         [InlineKeyboardButton(text='Пользователи 👤', callback_data='users')],
         [InlineKeyboardButton(text='Документы 📑', callback_data='documents')],
         [InlineKeyboardButton(text='Выйти 🚪', callback_data='exit')]
@@ -386,14 +388,10 @@ def get_manager_start_keyboard():
 def get_repairs_catalog_manager_keyboard():
     cb = CallbackData('repairs_catalog', 'id', 'action')
     answer = 'Каталог услуг на ремонт\nВыберите действие:'
-    repairs_catalog_keyboard = InlineKeyboardMarkup(row_width=1)
-    buttons = []
-    i = 0
+    repairs_catalog_keyboard = InlineKeyboardMarkup()
     for repair in db.get_data(table='repairs_catalog'):
-        buttons.append(InlineKeyboardButton(text=repair[1], callback_data=cb.new(id=repair[0], action='category')))
-        i += 1
-    repairs_catalog_keyboard.add(*buttons)
-    repairs_catalog_keyboard.add(InlineKeyboardButton(text='Добавить услугу ремонта ➕', callback_data=cb.new(id=-2, action='add')))
+        repairs_catalog_keyboard.add(InlineKeyboardButton(text=repair[1], callback_data=cb.new(id=repair[0], action='category')))
+    repairs_catalog_keyboard.add(InlineKeyboardButton(text='Заказанные услуги ⚙️', callback_data=cb.new(id=-3, action='orders_repair')), InlineKeyboardButton(text='Добавить услугу ремонта ➕', callback_data=cb.new(id=-2, action='add')))
     repairs_catalog_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
     return answer, repairs_catalog_keyboard
 
@@ -444,8 +442,49 @@ def get_update_field_repair_keyboard(action):
     return answer, update_field_repair_keyboard
 
 
+# Клавиатура заказанных услуг ремонта
+def get_orders_repair_manager_keyboard():
+    cb = CallbackData('orders_repair', 'id', 'action')
+    answer = f'Выберите заказанную услугу:'
+    orders_repair_keyboard = InlineKeyboardMarkup(row_width=1)
+    buttons = []
+    for order_repair in db.get_data(table='orders_repair'):
+        repair = db.get_data(table='repairs_catalog', where=1, op1='id', op2=order_repair[2])[0]
+        is_processed = [' [Не просмотрен;', ' [Просмотрен;'][order_repair[4]]
+        is_completed = [' Не выполнен] ', ' Выполнен] '][order_repair[5]]
+        buttons.append(InlineKeyboardButton(text=repair[1] + is_processed + is_completed, callback_data=cb.new(id=order_repair[0], action='order_repair')))
+    orders_repair_keyboard.add(*buttons).add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, orders_repair_keyboard
+
+
+# Клавиатура заказа услуг на ремонт
+def get_order_repair_manager_keyboard(order_id):
+    cb = CallbackData('order_repair', 'id', 'action')
+    order_repair = db.get_data(table='orders_repair', where=1, op1='id', op2=order_id)[0]
+    repair = db.get_data(table='repairs_catalog', where=1, op1='id', op2=order_repair[2])[0]
+    model = db.get_data(table='phone_models', where=1, op1='id', op2=order_repair[3])[0]
+    is_processed = ['Не просмотрен', 'Просмотрен'][order_repair[4]]
+    is_completed = ['Не выполнен', 'Выполнен'][order_repair[5]]
+    answer = f'Заказ под номером: {order_repair[0]}\nЗаказана пользователем: {order_repair[1]}\nЗаказанная услуга: {repair[1]}\nНа модель: {model[2]}\nЦена услуги: {repair[3]}₸\nСтатус просмотра: {is_processed}\nСтатус выполнения: {is_completed}'
+    if order_repair[5] == 0:
+        order_repair_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='Выполнить', callback_data=cb.new(id=order_repair[0], action='execute'))],
+            [InlineKeyboardButton(text='Отменить', callback_data=cb.new(id=order_repair[0], action='cancel_order'))],
+            [InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back'))]
+        ])
+    else:
+        order_repair_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='Отменить', callback_data=cb.new(id=order_repair[0], action='cancel_order'))],
+            [InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back'))]
+        ])
+    return answer, order_repair_keyboard
+
+
 # Ветка аксессуаров
 
+# Клавиатура выбора каталога аксессуаров
+def get_accessories_catalog_manager_keyboard():
+    pass
 
 # Ветка пользователей
 

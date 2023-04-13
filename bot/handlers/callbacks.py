@@ -52,6 +52,8 @@ async def set_state():
         await ManagerStatesGroup.repair_item.set()
     if state == 'ManagerStatesGroup:update_repair':
         await ManagerStatesGroup.update_repair.set()
+    if state == 'ManagerStatesGroup:orders_repair':
+        await ManagerStatesGroup.orders_repair.set()
     # Ветка аксессуаров
 
     # Ветка пользователей
@@ -264,7 +266,7 @@ async def select_orders(callback: types.CallbackQuery, callback_data: dict, stat
     else:
         await UserStatesGroup.orders_repair.set()
         add_state(await state.get_state())
-        ans, kb = get_orders_repair(callback.from_user.id)
+        ans, kb = get_orders_repair_keyboard(callback.from_user.id)
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
     await callback.answer()
@@ -322,7 +324,7 @@ async def select_order_repair(callback: types.CallbackQuery, callback_data: dict
     else:
         await UserStatesGroup.order_repair.set()
         add_state(await state.get_state())
-        ans, kb = get_order_repair(callback_data['id'])
+        ans, kb = get_order_repair_keyboard(callback_data['id'])
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
     await callback.answer()
@@ -340,7 +342,7 @@ async def order_repair(callback: types.CallbackQuery, callback_data: dict):
     else:
         db.cancel_order_repair(order_id=callback_data['id'])
         await UserStatesGroup.orders_repair.set()
-        ans, kb = get_orders_repair(callback.from_user.id)
+        ans, kb = get_orders_repair_keyboard(callback.from_user.id)
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
         await callback.answer('Заказ отменён!')
@@ -536,7 +538,7 @@ async def open_repairs_catalog(callback: types.CallbackQuery, state: FSMContext)
     await callback.answer()
 
 
-# Выбрать / Добавить услугу ремонта
+# Выбрать / Добавить услугу ремонта / Открыть заказанные услуги
 @dp.callback_query_handler(CallbackData('repairs_catalog', 'id', 'action').filter(), state=ManagerStatesGroup.repairs_catalog)
 async def repairs_catalog(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
@@ -549,6 +551,12 @@ async def repairs_catalog(callback: types.CallbackQuery, callback_data: dict, st
         await ManagerStatesGroup.add_repair.set()
         add_state(await state.get_state())
         ans, kb = get_add_repair_item_keyboard()
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    elif callback_data['action'] == 'orders_repair':
+        await ManagerStatesGroup.orders_repair.set()
+        add_state(await state.get_state())
+        ans, kb = get_orders_repair_manager_keyboard()
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
     else:
@@ -632,7 +640,63 @@ async def back_add_repair(callback: types.CallbackQuery, callback_data: dict):
     await callback.answer()
 
 
+# Выбор заказанной услуги ремнота
+@dp.callback_query_handler(CallbackData('orders_repair', 'id', 'action').filter(), state=ManagerStatesGroup.orders_repair)
+async def select_order_repair(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    else:
+        await ManagerStatesGroup.order_repair.set()
+        add_state(await state.get_state())
+        db.change_is_processed(order_repair_id=callback_data['id'])
+        ans, kb = get_order_repair_manager_keyboard(callback_data['id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    await callback.answer()
+
+
+# Обработка заказа услуги ремонта
+@dp.callback_query_handler(CallbackData('order_repair', 'id', 'action').filter(), state=ManagerStatesGroup.order_repair)
+async def select_order_repair(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    elif callback_data['action'] == 'execute':
+        db.change_is_completed(order_repair_id=callback_data['id'])
+        ans, kb = get_order_repair_manager_keyboard(callback_data['id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        await callback.answer('Заказ выполнен!')
+    else:
+        db.cancel_order_repair(order_id=callback_data['id'])
+        delete_state()
+        await ManagerStatesGroup.orders_repair.set()
+        ans, kb = get_orders_repair_manager_keyboard()
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        await callback.answer('Заказ отменён!')
+    await callback.answer()
+
+
 # Ветка аксессуаров
+
+# Открыть каталог акссесуаров
+
+@dp.callback_query_handler(text='accessories_catalog', state=ManagerStatesGroup.start)
+def open_accessories_catalog(callback: types.CallbackQuery, state: FSMContext):
+    await ManagerStatesGroup.accessories_catalog.set()
+    add_state(await state.get_state())
+    ans, kb = get_accessories_catalog_manager_keyboard()
+    await callback.message.edit_text(text=ans,
+                                     reply_markup=kb)
+    await callback.answer()
 
 
 # Ветка пользователей

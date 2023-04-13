@@ -47,11 +47,23 @@ class ManagerStatesGroup(StatesGroup):
     repairs_catalog = State()
     repair_item = State()
 
+    orders_repair = State()
+    order_repair = State()
+
     add_repair = State()
     update_repair = State()
     update_field_repair = State()
 
     # Ветка аксессуаров
+    accessories_catalog = State()
+    accessories = State()
+    accessory = State()
+
+    desired = State()
+
+    add_accessory = State()
+    update_accessory = State()
+    update_field_accessory = State()
 
     # Ветка пользователей
 

@@ -126,6 +126,19 @@ class DataBase:
             self.cursor.execute(f'UPDATE repairs_catalog SET {kwargs["field"]} = "{kwargs["new_value"]}" WHERE id = {kwargs["repair_id"]}')
         self.conn.commit()
 
+    # Изменение состояния просмотра
+    def change_is_processed(self, **kwargs):
+        self.cursor.execute(f'SELECT is_processed FROM orders_repair WHERE id = {kwargs["order_repair_id"]}')
+        is_processed = self.cursor.fetchall()[0][0]
+        if is_processed == 0:
+            self.cursor.execute(f'UPDATE orders_repair SET is_processed = 1 WHERE id = {kwargs["order_repair_id"]}')
+            self.conn.commit()
+
+    # Выполнение заказа на ремонт услуги
+    def change_is_completed(self, **kwargs):
+        self.cursor.execute(f'UPDATE orders_repair SET is_completed = 1 WHERE id = {kwargs["order_repair_id"]}')
+        self.conn.commit()
+
     # Ветка аксессуаров
 
     # Ветка пользователей
