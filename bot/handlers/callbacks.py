@@ -55,7 +55,16 @@ async def set_state():
     if state == 'ManagerStatesGroup:orders_repair':
         await ManagerStatesGroup.orders_repair.set()
     # Ветка аксессуаров
-
+    if state == 'ManagerStatesGroup:accessories_catalog':
+        await ManagerStatesGroup.accessories_catalog.set()
+    if state == 'ManagerStatesGroup:accessories':
+        await ManagerStatesGroup.accessories.set()
+    if state == 'ManagerStatesGroup:accessory':
+        await ManagerStatesGroup.accessory.set()
+    if state == 'ManagerStatesGroup:update_accessory':
+        await ManagerStatesGroup.update_accessory.set()
+    if state == 'ManagerStatesGroup:desired_accessories':
+        await ManagerStatesGroup.desired_accessories.set()
     # Ветка пользователей
 
     # Ветка документов
@@ -630,7 +639,7 @@ async def select_field_update_repair(callback: types.CallbackQuery, callback_dat
 
 # Вернуться из редактирования услуги ремонта
 @dp.callback_query_handler(CallbackData('update_field_repair', 'action').filter(), state=ManagerStatesGroup.update_field_repair)
-async def back_add_repair(callback: types.CallbackQuery, callback_data: dict):
+async def back_update_field_repair(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'back':
         await set_state()
         ans, kb = get_keyboard(STATES_LIST[-2])
@@ -661,7 +670,7 @@ async def select_order_repair(callback: types.CallbackQuery, callback_data: dict
 
 # Обработка заказа услуги ремонта
 @dp.callback_query_handler(CallbackData('order_repair', 'id', 'action').filter(), state=ManagerStatesGroup.order_repair)
-async def select_order_repair(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+async def select_order_repair(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'back':
         await set_state()
         ans, kb = get_keyboard(STATES_LIST[-2])
@@ -688,14 +697,223 @@ async def select_order_repair(callback: types.CallbackQuery, callback_data: dict
 # Ветка аксессуаров
 
 # Открыть каталог акссесуаров
-
 @dp.callback_query_handler(text='accessories_catalog', state=ManagerStatesGroup.start)
-def open_accessories_catalog(callback: types.CallbackQuery, state: FSMContext):
+async def open_accessories_catalog(callback: types.CallbackQuery, state: FSMContext):
     await ManagerStatesGroup.accessories_catalog.set()
     add_state(await state.get_state())
     ans, kb = get_accessories_catalog_manager_keyboard()
     await callback.message.edit_text(text=ans,
                                      reply_markup=kb)
+    await callback.answer()
+
+
+# Выбрать / Добавить / Удалить категорию аксессуаров / Открыть желаемые товары
+@dp.callback_query_handler(CallbackData('accessories_catalog', 'id', 'action').filter(), state=ManagerStatesGroup.accessories_catalog)
+async def accessories_catalog(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    elif callback_data['action'] == 'add':
+        await ManagerStatesGroup.add_accessory_catalog.set()
+        add_state(await state.get_state())
+        ans, kb = get_add_accessory_catalog_keyboard()
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    elif callback_data['action'] == 'desired':
+        await ManagerStatesGroup.desired_accessories.set()
+        add_state(await state.get_state())
+        ans, kb = get_desired_manager_keyboard()
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    elif callback_data['action'] == 'delete':
+        await ManagerStatesGroup.delete_accessory_catalog.set()
+        add_state(await state.get_state())
+        ans, kb = get_delete_accessory_catalog_keyboard()
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    else:
+        await ManagerStatesGroup.accessories.set()
+        add_state(await state.get_state())
+        async with state.proxy() as data:
+            data['category_id_manager'] = callback_data['id']
+        ans, kb = get_accessories_manager_keyboard(callback_data['id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    await callback.answer()
+
+
+# Вернуться из добавление категории аксессуаров
+@dp.callback_query_handler(CallbackData('add_accessory_catalog', 'action').filter(), state=ManagerStatesGroup.add_accessory_catalog)
+async def back_add_accessory_catalog(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    await callback.answer()
+
+
+# Выбор категории аксессуаров на удаление
+@dp.callback_query_handler(CallbackData('delete_accessory_catalog', 'id', 'action').filter(), state=ManagerStatesGroup.delete_accessory_catalog)
+async def delete_accessory_catalog(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    else:
+        db.delete_accessory_catalog(accessory_catalog_id=callback_data['id'])
+        delete_state()
+        await ManagerStatesGroup.accessories_catalog.set()
+        ans, kb = get_accessories_catalog_manager_keyboard()
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        await callback.answer('Категория успешно удалена!')
+    await callback.answer()
+
+
+# Выбрать / Добавить аксессуар
+@dp.callback_query_handler(CallbackData('accessories', 'id', 'action').filter(), state=ManagerStatesGroup.accessories)
+async def accessories(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    elif callback_data['action'] == 'add':
+        await ManagerStatesGroup.add_accessory.set()
+        add_state(await state.get_state())
+        ans, kb = get_add_accessory_keyboard()
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    else:
+        await ManagerStatesGroup.accessory.set()
+        add_state(await state.get_state())
+        await callback.message.delete()
+        ans, kb, photo = get_accessory_manager_keyboard(callback_data['id'])
+        await callback.message.answer_photo(photo=photo,
+                                            caption=ans,
+                                            reply_markup=kb)
+    await callback.answer()
+
+
+# Вернуться из добавления аксессуара
+@dp.callback_query_handler(CallbackData('add_accessory', 'action').filter(), state=ManagerStatesGroup.add_accessory)
+async def back_add_accessory(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        async with state.proxy() as data:
+            ans, kb = get_keyboard(STATES_LIST[-2], category_id=data['category_id_manager'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    await callback.answer()
+
+
+# Удалить аксессуар / Выбор редактирования аксессуара
+@dp.callback_query_handler(CallbackData('accessory', 'id', 'action').filter(), state=ManagerStatesGroup.accessory)
+async def accessory(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await callback.message.delete()
+        await set_state()
+        async with state.proxy() as data:
+            ans, kb = get_keyboard(STATES_LIST[-2], category_id=data['category_id_manager'])
+        await callback.message.answer(text=ans,
+                                      reply_markup=kb)
+        delete_state()
+    elif callback_data['action'] == 'update':
+        await ManagerStatesGroup.update_accessory.set()
+        await callback.message.delete()
+        add_state(await state.get_state())
+        async with state.proxy() as data:
+            data['accessory_id'] = callback_data['id']
+        ans, kb = get_update_accessory_keyboard()
+        await callback.message.answer(text=ans,
+                                      reply_markup=kb)
+    else:
+        db.delete_accessory(accessory_id=callback_data['id'])
+        await set_state()
+        async with state.proxy() as data:
+            ans, kb = get_keyboard(STATES_LIST[-2], category_id=data['category_id_manager'])
+        await callback.message.answer(text=ans,
+                                      reply_markup=kb)
+        delete_state()
+        await callback.answer('Аксессуар успешно удалён!')
+        await callback.message.delete()
+    await callback.answer()
+
+
+# Выбор поля на редактирование аксессуара
+@dp.callback_query_handler(CallbackData('update_accessory', 'action').filter(), state=ManagerStatesGroup.update_accessory)
+async def select_field_update_accessory(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await callback.message.delete()
+        await set_state()
+        async with state.proxy() as data:
+            ans, kb, photo = get_keyboard(STATES_LIST[-2], accessory_id=data['accessory_id'])
+        await callback.message.answer_photo(photo=photo,
+                                            caption=ans,
+                                            reply_markup=kb)
+        delete_state()
+    else:
+        await ManagerStatesGroup.update_field_accessory.set()
+        add_state(await state.get_state())
+        async with state.proxy() as data:
+            data['field'] = callback_data['action']
+        ans, kb = get_update_field_accessory_keyboard(callback_data['action'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    await callback.answer()
+
+
+# Вернуться из редактирования услуги ремонта
+@dp.callback_query_handler(CallbackData('update_field_accessory', 'action').filter(), state=ManagerStatesGroup.update_field_accessory)
+async def back_update_field_accessory(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    await callback.answer()
+
+
+# Выбор из желаемых аксессуаров
+@dp.callback_query_handler(CallbackData('desired_accessories', 'id', 'action').filter(), state=ManagerStatesGroup.desired_accessories)
+async def desired_accessories(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    else:
+        await ManagerStatesGroup.desired_accessory.set()
+        add_state(await state.get_state())
+        await callback.message.delete()
+        ans, kb, photo = get_desired_accessory_manager_keyboard(callback_data['id'])
+        await callback.message.answer_photo(photo=photo,
+                                            caption=ans,
+                                            reply_markup=kb)
+    await callback.answer()
+
+
+# Вернуться из желаемого аксессуара
+@dp.callback_query_handler(CallbackData('desired_accessory', 'action').filter(), state=ManagerStatesGroup.desired_accessory)
+async def back_desired_accessory(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await set_state()
+        await callback.message.delete()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.answer(text=ans,
+                                      reply_markup=kb)
+        delete_state()
     await callback.answer()
 
 

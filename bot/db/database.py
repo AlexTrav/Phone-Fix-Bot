@@ -141,6 +141,34 @@ class DataBase:
 
     # Ветка аксессуаров
 
+    # Добавление категории аксессуаров
+    def add_accessory_catalog(self, **kwargs):
+        self.cursor.execute(f'INSERT INTO accessories_catalog(name) VALUES ("{kwargs["name"]}")')
+        self.conn.commit()
+
+    # Удаление категории аксессуаров
+    def delete_accessory_catalog(self, **kwargs):
+        self.cursor.execute(f'DELETE FROM accessories_catalog WHERE id = {kwargs["accessory_catalog_id"]}')
+        self.conn.commit()
+
+    # Добавление аксессуара
+    def add_accessory(self, **kwargs):
+        self.cursor.execute(f'INSERT INTO accessories(catalog_id, name, description, specifications, cost, photo, name_lc) VALUES ({kwargs["catalog_id"]}, "{kwargs["name"]}", "{kwargs["description"]}", "{kwargs["specifications"]}", {kwargs["cost"]}, "{kwargs["photo"]}", "{kwargs["name"].lower()}")')
+        self.conn.commit()
+
+    # Удаление аксессуара
+    def delete_accessory(self, **kwargs):
+        self.cursor.execute(f'DELETE FROM accessories WHERE id = {kwargs["accessory_id"]}')
+        self.conn.commit()
+
+    # Смена значения поля аксессуара
+    def update_accessory(self, **kwargs):
+        if kwargs['field'] == 'name':
+            self.cursor.execute(f'UPDATE accessories SET name = "{kwargs["new_value"]}", name_lc = "{kwargs["new_value"].lower()}" WHERE id = {kwargs["accessory_id"]}')
+        else:
+            self.cursor.execute(f'UPDATE accessories SET {kwargs["field"]} = "{kwargs["new_value"]}" WHERE id = {kwargs["accessory_id"]}')
+        self.conn.commit()
+
     # Ветка пользователей
 
     # Ветка документов

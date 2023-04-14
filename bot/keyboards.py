@@ -75,6 +75,16 @@ def get_keyboard(state, **kwargs):
     if state == 'ManagerStatesGroup:orders_repair':
         return get_orders_repair_manager_keyboard()
     # Ветка аксессуаров
+    if state == 'ManagerStatesGroup:accessories_catalog':
+        return get_accessories_catalog_manager_keyboard()
+    if state == 'ManagerStatesGroup:accessories':
+        return get_accessories_manager_keyboard(kwargs['category_id'])
+    if state == 'ManagerStatesGroup:accessory':
+        return get_accessory_manager_keyboard(kwargs['accessory_id'])
+    if state == 'ManagerStatesGroup:update_accessory':
+        return get_update_accessory_keyboard()
+    if state == 'ManagerStatesGroup:desired_accessories':
+        return get_desired_manager_keyboard()
 
     # Ветка пользователей
 
@@ -484,7 +494,121 @@ def get_order_repair_manager_keyboard(order_id):
 
 # Клавиатура выбора каталога аксессуаров
 def get_accessories_catalog_manager_keyboard():
-    pass
+    cb = CallbackData('accessories_catalog', 'id', 'action')
+    answer = 'Выберите каталог аксессуаров:'
+    accessories_catalog_keyboard = InlineKeyboardMarkup()
+    for catalog in db.get_data(table='accessories_catalog'):
+        accessories_catalog_keyboard.add(InlineKeyboardButton(text=catalog[1], callback_data=cb.new(id=catalog[0], action='catalog')))
+    accessories_catalog_keyboard.add(InlineKeyboardButton(text='Желаемые акксесуары 📒', callback_data=cb.new(id=-2, action='desired')), InlineKeyboardButton(text='Добавить категорию ➕', callback_data=cb.new(id=-2, action='add')))
+    accessories_catalog_keyboard.add(InlineKeyboardButton(text='Удалить каталог ✖️', callback_data=cb.new(id=-3, action='delete')))
+    accessories_catalog_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, accessories_catalog_keyboard
+
+
+# Клавиатура добавления категории аксессуаров
+def get_add_accessory_catalog_keyboard():
+    cb = CallbackData('add_accessory_catalog', 'action')
+    answer = 'Добавление категории аксессуаров\nВведите "Наименование" новой категории следующим сообщением:\n'
+    add_accessory_catalog = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
+    ])
+    return answer, add_accessory_catalog
+
+
+# Клавиатура удаления категории аксессуаров
+def get_delete_accessory_catalog_keyboard():
+    cb = CallbackData('delete_accessory_catalog', 'id', 'action')
+    answer = 'Выберите каталог на удаление:'
+    accessories_catalog_keyboard = InlineKeyboardMarkup()
+    for catalog in db.get_data(table='accessories_catalog'):
+        accessories_catalog_keyboard.add(InlineKeyboardButton(text=catalog[1], callback_data=cb.new(id=catalog[0], action='catalog')))
+    accessories_catalog_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, accessories_catalog_keyboard
+
+
+# Клавиатура выбора аксессуара
+def get_accessories_manager_keyboard(catalog_id):
+    cb = CallbackData('accessories', 'id', 'action')
+    answer = 'Выберите аксессуар:'
+    accessories_keyboard = InlineKeyboardMarkup(row_width=1)
+    for accessory in db.get_accessories(catalog_id=catalog_id, order_by=SORTING):
+        accessories_keyboard.add(InlineKeyboardButton(text=accessory[2], callback_data=cb.new(id=accessory[0], action='catalog')))
+    accessories_keyboard.add(InlineKeyboardButton(text='Добавить аксессуар ➕', callback_data=cb.new(id=-2, action='add')))
+    accessories_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, accessories_keyboard
+
+
+# Клавиатура аксессуара
+def get_accessory_manager_keyboard(accessory_id):
+    cb = CallbackData('accessory', 'id', 'action')
+    accessory = db.get_data(table='accessories', where=1, op1='id', op2=accessory_id)[0]
+    answer = f'Аксессуар: {accessory[2]}\nОписание: {accessory[3]}\nХарактеристики: {accessory[4]}\nЦена: {accessory[5]}₸'
+    accessory_keyboard = InlineKeyboardMarkup(row_width=1)
+    accessory_keyboard.add(InlineKeyboardButton(text='Редактировать аксессуар ✏️', callback_data=cb.new(id=accessory[0], action='update')))
+    accessory_keyboard.add(InlineKeyboardButton(text='Удалить аксессуар ✖️', callback_data=cb.new(id=accessory[0], action='delete')))
+    accessory_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, accessory_keyboard, accessory[6]
+
+
+# Клавиатура добавления аксессуара
+def get_add_accessory_keyboard():
+    cb = CallbackData('add_accessory', 'action')
+    answer = 'Добавление аксеcсуара\nВведите наименование; описание; характеристики; цену; фото(ссылкой) следующим сообщением:\nКаждый параметр с новой строки, всего 5 параметров'
+    add_accessory = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
+    ])
+    return answer, add_accessory
+
+
+# Клавиатура желаемых аксессуаров
+def get_desired_manager_keyboard():
+    cb = CallbackData('desired_accessories', 'id', 'action')
+    answer = 'Самые желаемые аксессуары:'
+    desired_accessories_keyboard = InlineKeyboardMarkup(row_width=1)
+    most_desired_accessories = set()
+    for desired_accessory in db.get_data(table='desired'):
+        most_desired_accessories.add(desired_accessory[2])
+    for accessory_id in most_desired_accessories:
+        accessory = db.get_data(table='accessories', where=1, op1='id', op2=accessory_id)[0]
+        desired_accessories_keyboard.add(InlineKeyboardButton(text=accessory[2], callback_data=cb.new(id=accessory[0], action='desired_accessory')))
+    desired_accessories_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, desired_accessories_keyboard
+
+
+# Клавиатура желаемого аксессуара
+def get_desired_accessory_manager_keyboard(accessory_id):
+    cb = CallbackData('desired_accessory', 'action')
+    accessory = db.get_data(table='accessories', where=1, op1='id', op2=accessory_id)[0]
+    answer = f'Аксессуар: {accessory[2]}\nОписание: {accessory[3]}\nХарактеристики: {accessory[4]}\nЦена: {accessory[5]}₸'
+    accessory_keyboard = InlineKeyboardMarkup(row_width=1)
+    accessory_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back')))
+    return answer, accessory_keyboard, accessory[6]
+
+
+# Клавиатура выбора поля для редактирования аксессуара
+def get_update_accessory_keyboard():
+    cb = CallbackData('update_accessory', 'action')
+    answer = 'Выберите поле для редактирования аксессуара'
+    update_accessory_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='Наименование', callback_data=cb.new(action='name'))],
+        [InlineKeyboardButton(text='Описание', callback_data=cb.new(action='description'))],
+        [InlineKeyboardButton(text='Характеристики', callback_data=cb.new(action='specifications'))],
+        [InlineKeyboardButton(text='Цена', callback_data=cb.new(action='cost'))],
+        [InlineKeyboardButton(text='Фото', callback_data=cb.new(action='photo'))],
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
+    ])
+    return answer, update_accessory_keyboard
+
+
+# Клавиатура смены значения поля аксессуара
+def get_update_field_accessory_keyboard(action):
+    cb = CallbackData('update_field_accessory', 'action')
+    answer = f'Введите новое значение для поля "{action}", следующим сообщением:'
+    update_field_repair_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
+    ])
+    return answer, update_field_repair_keyboard
+
 
 # Ветка пользователей
 

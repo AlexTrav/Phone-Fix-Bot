@@ -59,9 +59,14 @@ class ManagerStatesGroup(StatesGroup):
     accessories = State()
     accessory = State()
 
-    desired = State()
+    desired_accessories = State()
+    desired_accessory = State()
 
+    add_accessory_catalog = State()
     add_accessory = State()
+
+    delete_accessory_catalog = State()
+
     update_accessory = State()
     update_field_accessory = State()
 
