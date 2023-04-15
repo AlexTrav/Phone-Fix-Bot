@@ -66,6 +66,10 @@ async def set_state():
     if state == 'ManagerStatesGroup:desired_accessories':
         await ManagerStatesGroup.desired_accessories.set()
     # Ветка пользователей
+    if state == 'ManagerStatesGroup:users':
+        await ManagerStatesGroup.users.set()
+    if state == 'ManagerStatesGroup:user':
+        await ManagerStatesGroup.user.set()
 
     # Ветка документов
 
@@ -522,12 +526,12 @@ async def back_about(callback: types.CallbackQuery, callback_data: dict):
     await callback.answer()
 
 
-# Войти как мэнэджер
+# Войти как менеджер
 @dp.callback_query_handler(text='login_manager', state=UserStatesGroup.start)
 async def open_about(callback: types.CallbackQuery):
     delete_all_states()
     db.change_status_id(user_id=callback.from_user.id, status_id=2)
-    await callback.answer('Вы успешно вошли как мэнэджер!')
+    await callback.answer('Вы успешно вошли как менеджер!')
     await callback.message.delete()
     await callback.answer()
 
@@ -919,13 +923,83 @@ async def back_desired_accessory(callback: types.CallbackQuery, callback_data: d
 
 # Ветка пользователей
 
+# Открыть меню пользователей
+@dp.callback_query_handler(text='users', state=ManagerStatesGroup.start)
+async def open_users(callback: types.CallbackQuery, state: FSMContext):
+    await ManagerStatesGroup.users.set()
+    add_state(await state.get_state())
+    ans, kb = get_users_keyboard()
+    await callback.message.edit_text(text=ans,
+                                     reply_markup=kb)
+    await callback.answer()
+
+
+# Выбор пользователя
+@dp.callback_query_handler(CallbackData('users', 'id', 'action').filter(), state=ManagerStatesGroup.users)
+async def open_user(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    else:
+        await ManagerStatesGroup.user.set()
+        add_state(await state.get_state())
+        ans, kb = get_user_keyboard(callback_data['id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    await callback.answer()
+
+
+# Открыть разрешения пользователя
+@dp.callback_query_handler(CallbackData('user', 'id', 'action').filter(), state=ManagerStatesGroup.user)
+async def user(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2], user_id=callback_data['id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    else:
+        await ManagerStatesGroup.permissions.set()
+        add_state(await state.get_state())
+        ans, kb = get_permissions_keyboard(callback_data['id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    await callback.answer()
+
+
+# Разрешения пользователя
+@dp.callback_query_handler(CallbackData('permissions', 'id', 'action').filter(), state=ManagerStatesGroup.permissions)
+async def user(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2], user_id=callback_data['id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    elif callback_data['action'] == 'delete_permission':
+        db.delete_permission(user_id=callback_data['id'])
+        ans, kb = get_permissions_keyboard(callback_data['id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        await callback.answer('Разрешения успешно удалено!')
+    else:
+        db.add_permission(user_id=callback_data['id'])
+        ans, kb = get_permissions_keyboard(callback_data['id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        await callback.answer('Разрешения успешно добавлено!')
+    await callback.answer()
+
 
 # Ветка документов
 
 
 # Ветка выхода
 
-# Выйти из режима мэнэджера
+# Выйти из режима менеджера
 @dp.callback_query_handler(text='exit', state=ManagerStatesGroup.start)
 async def exit_manager(callback: types.CallbackQuery):
     delete_all_states()

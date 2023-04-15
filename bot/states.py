@@ -71,5 +71,8 @@ class ManagerStatesGroup(StatesGroup):
     update_field_accessory = State()
 
     # Ветка пользователей
+    users = State()
+    user = State()
+    permissions = State()
 
     # Ветка документов

@@ -87,7 +87,10 @@ def get_keyboard(state, **kwargs):
         return get_desired_manager_keyboard()
 
     # Ветка пользователей
-
+    if state == 'ManagerStatesGroup:users':
+        return get_users_keyboard()
+    if state == 'ManagerStatesGroup:user':
+        return get_user_keyboard(kwargs['user_id'])
     # Ветка документов
 
 
@@ -104,7 +107,7 @@ def get_user_start_keyboard(user_id):
         [InlineKeyboardButton(text='О нас 👤', callback_data='about')]
     ])
     if user_id in get_permissions_id():
-        start_keyboard.add(InlineKeyboardButton(text='Войти как мэнэджер 🧑‍💻', callback_data='login_manager'))
+        start_keyboard.add(InlineKeyboardButton(text='Войти как менеджер 🧑‍💻', callback_data='login_manager'))
     return answer, start_keyboard
 
 
@@ -611,6 +614,44 @@ def get_update_field_accessory_keyboard(action):
 
 
 # Ветка пользователей
+
+# Клавиатура пользователей
+def get_users_keyboard():
+    cb = CallbackData('users', 'id', 'action')
+    answer = 'Выберите пользователя:'
+    users_keyboard = InlineKeyboardMarkup(row_width=1)
+    for user in db.get_data(table='users'):
+        users_keyboard.add(InlineKeyboardButton(text=user[2], callback_data=cb.new(id=user[0], action='user')))
+    users_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
+    return answer, users_keyboard
+
+
+# Клавиатура пользователя
+def get_user_keyboard(user_id):
+    cb = CallbackData('user', 'id', 'action')
+    user = db.get_data(table='users', where=1, op1='id', op2=user_id)[0]
+    link = f'https://t.me/{user[1]}'
+    status = ['', 'Пользователь', 'Менеджер'][user[3]]
+    answer = f'Пользователь: {user[0]};\nИмя: {user[2]};\n@Username: {user[1]};\nСсылка на пользователя: {link};\nСтатус входа: {status}.'
+    user_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+        [InlineKeyboardButton(text='Разрешения пользователя ✔️', callback_data=cb.new(id=user[0], action='permissions'))],
+        [InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=user[0], action='back'))]
+    ])
+    return answer, user_keyboard
+
+
+# Клавиатура разрешений пользователя
+def get_permissions_keyboard(user_id):
+    cb = CallbackData('permissions', 'id', 'action')
+    permissions_keyboard = InlineKeyboardMarkup(row_width=1)
+    answer = f'Пользователь: {user_id}\n'
+    if db.get_permissions_user(user_id=user_id):
+        answer += 'Имеет права: Менеджера'
+        permissions_keyboard.add(InlineKeyboardButton(text='Отозвать права', callback_data=cb.new(id=user_id, action='delete_permission')))
+    else:
+        permissions_keyboard.add(InlineKeyboardButton(text='Выдать права менеджера', callback_data=cb.new(id=user_id, action='insert_permission')))
+    permissions_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=user_id, action='back')))
+    return answer, permissions_keyboard
 
 
 # Ветка документов
