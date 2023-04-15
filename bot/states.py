@@ -76,3 +76,6 @@ class ManagerStatesGroup(StatesGroup):
     permissions = State()
 
     # Ветка документов
+    documents = State()
+    document = State()
+

@@ -70,8 +70,9 @@ async def set_state():
         await ManagerStatesGroup.users.set()
     if state == 'ManagerStatesGroup:user':
         await ManagerStatesGroup.user.set()
-
     # Ветка документов
+    if state == 'ManagerStatesGroup:documents':
+        await ManagerStatesGroup.documents.set()
 
 
 # USER
@@ -995,6 +996,46 @@ async def user(callback: types.CallbackQuery, callback_data: dict):
 
 
 # Ветка документов
+
+# Открыть документы
+@dp.callback_query_handler(text='documents', state=ManagerStatesGroup.start)
+async def open_documents(callback: types.CallbackQuery, state: FSMContext):
+    await ManagerStatesGroup.documents.set()
+    add_state(await state.get_state())
+    ans, kb = get_documents_keyboard()
+    await callback.message.edit_text(text=ans,
+                                     reply_markup=kb)
+    await callback.answer()
+
+
+# Выбор документа
+@dp.callback_query_handler(CallbackData('documents', 'id', 'action').filter(), state=ManagerStatesGroup.documents)
+async def open_document(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    else:
+        await ManagerStatesGroup.document.set()
+        add_state(await state.get_state())
+        ans, kb = get_document_keyboard(callback_data['id'])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+    await callback.answer()
+
+
+# Возвращение из документа
+@dp.callback_query_handler(CallbackData('document', 'action').filter(), state=ManagerStatesGroup.document)
+async def back_document(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await set_state()
+        ans, kb = get_keyboard(STATES_LIST[-2])
+        await callback.message.edit_text(text=ans,
+                                         reply_markup=kb)
+        delete_state()
+    await callback.answer()
 
 
 # Ветка выхода
