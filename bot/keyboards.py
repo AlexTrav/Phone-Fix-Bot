@@ -167,7 +167,7 @@ def get_phone_models_keyboard(category_model_id):
     answer = 'Выберите модель телефона:'
     phone_models_keyboard = InlineKeyboardMarkup(row_width=1)
     buttons = []
-    for model in db.get_data(table='phone_models', where=1, op1='id', op2=category_model_id):
+    for model in db.get_data(table='phone_models', where=1, op1='category_id', op2=category_model_id):
         buttons.append(InlineKeyboardButton(text=model[2], callback_data=cb.new(id=model[0], action='model')))
     phone_models_keyboard.add(*buttons).add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
     return answer, phone_models_keyboard
@@ -193,12 +193,14 @@ def get_accessories_keyboard(catalog_id):
     answer = 'Выберите аксессуар:'
     accessories_keyboard = InlineKeyboardMarkup(row_width=1)
     buttons = []
-    for accessory in db.get_accessories(catalog_id=catalog_id, order_by=SORTING):
+    accessories = db.get_accessories(catalog_id=catalog_id, order_by=SORTING)
+    for accessory in accessories:
         buttons.append(InlineKeyboardButton(text=accessory[2], callback_data=cb.new(id=accessory[0], action='catalog')))
     accessories_keyboard.add(*buttons)
-    accessories_keyboard.add(InlineKeyboardButton(text='📋 Отсортировать по умолчанию 📋', callback_data=cb.new(id=-1, action='sort_default')))
-    accessories_keyboard.add(InlineKeyboardButton(text='⬆️ Отсортировать по возрастанию цены 💵', callback_data=cb.new(id=-1, action='sort_asc')))
-    accessories_keyboard.add(InlineKeyboardButton(text='⬇️ Отсортировать по убыванию цены 💵', callback_data=cb.new(id=-1, action='sort_desc')))
+    if accessories:
+        accessories_keyboard.add(InlineKeyboardButton(text='📋 Отсортировать по умолчанию 📋', callback_data=cb.new(id=-1, action='sort_default')))
+        accessories_keyboard.add(InlineKeyboardButton(text='⬆️ Отсортировать по возрастанию цены 💵', callback_data=cb.new(id=-1, action='sort_asc')))
+        accessories_keyboard.add(InlineKeyboardButton(text='⬇️ Отсортировать по убыванию цены 💵', callback_data=cb.new(id=-1, action='sort_desc')))
     accessories_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
     return answer, accessories_keyboard
 
