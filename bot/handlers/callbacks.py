@@ -224,7 +224,8 @@ async def open_accessory(callback: types.CallbackQuery, callback_data: dict, sta
         ans, kb, photo = get_accessory_keyboard(callback_data['id'], callback.from_user.id)
         await callback.message.answer_photo(photo=photo,
                                             caption=ans[:1000],
-                                            reply_markup=kb)
+                                            reply_markup=kb,
+                                            parse_mode='HTML')
     await callback.answer()
 
 
@@ -245,7 +246,8 @@ async def open_accessory(callback: types.CallbackQuery, callback_data: dict, sta
         ans, kb, photo = get_accessory_keyboard(callback_data['id'], callback.from_user.id)
         await callback.message.answer_photo(photo=photo,
                                             caption=ans[:1000],
-                                            reply_markup=kb)
+                                            reply_markup=kb,
+                                            parse_mode='HTML')
     await callback.answer()
 
 

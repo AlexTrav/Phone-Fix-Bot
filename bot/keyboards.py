@@ -235,7 +235,7 @@ def set_sorting_answer(action):
 def get_accessory_keyboard(accessory_id, user_id):
     cb = CallbackData('accessory', 'id', 'action')
     accessory = db.get_data(table='accessories', where=1, op1='id', op2=accessory_id)[0]
-    answer = f'Аксессуар: {accessory[2]}\nОписание: {accessory[3]}\nХарактеристики: {accessory[4]}\nЦена: {accessory[5]}₸'
+    answer = f'<b>Аксессуар</b>: {accessory[2]}\n<b>Описание</b>: {accessory[3]}\n<b>Характеристики</b>: {accessory[4]}\n<b>Цена</b>: {accessory[5]}₸'
     accessory_keyboard = InlineKeyboardMarkup(row_width=1)
     if db.is_accessory_in_user(user_id=user_id, accessory_id=accessory_id):
         accessory_keyboard.add(InlineKeyboardButton(text='Убрать из желаемого', callback_data=cb.new(id=accessory[0], action='delete_desired')))
