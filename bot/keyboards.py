@@ -182,7 +182,9 @@ def get_accessories_catalog_keyboard():
     accessories_catalog_keyboard = InlineKeyboardMarkup(row_width=1)
     buttons = []
     for catalog in db.get_data(table='accessories_catalog'):
-        buttons.append(InlineKeyboardButton(text=catalog[1], callback_data=cb.new(id=catalog[0], action='catalog')))
+        accessories = db.get_data(table='accessories', where=1, op1='catalog_id', op2=catalog[0])
+        if accessories:
+            buttons.append(InlineKeyboardButton(text=catalog[1], callback_data=cb.new(id=catalog[0], action='catalog')))
     accessories_catalog_keyboard.add(*buttons).add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
     return answer, accessories_catalog_keyboard
 
@@ -197,7 +199,7 @@ def get_accessories_keyboard(catalog_id):
     for accessory in accessories:
         buttons.append(InlineKeyboardButton(text=accessory[2], callback_data=cb.new(id=accessory[0], action='catalog')))
     accessories_keyboard.add(*buttons)
-    if accessories:
+    if len(accessories) > 1:
         accessories_keyboard.add(InlineKeyboardButton(text='📋 Отсортировать по умолчанию 📋', callback_data=cb.new(id=-1, action='sort_default')))
         accessories_keyboard.add(InlineKeyboardButton(text='⬆️ Отсортировать по возрастанию цены 💵', callback_data=cb.new(id=-1, action='sort_asc')))
         accessories_keyboard.add(InlineKeyboardButton(text='⬇️ Отсортировать по убыванию цены 💵', callback_data=cb.new(id=-1, action='sort_desc')))
