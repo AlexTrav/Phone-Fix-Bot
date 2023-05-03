@@ -29,8 +29,7 @@ class DataBase:
         self.cursor.execute('SELECT * FROM users')
         users = self.cursor.fetchall()
         if not users:
-            self.cursor.execute(
-                f'INSERT INTO users(id, user_name, fl_name) VALUES ({kwargs["user_id"]}, "{kwargs["user_name"]}", "{kwargs["fl_name"]}")')
+            self.cursor.execute(f'INSERT INTO users(id, user_name, fl_name) VALUES ({kwargs["user_id"]}, "{kwargs["user_name"]}", "{kwargs["fl_name"]}")')
             self.conn.commit()
         else:
             self.cursor.execute(f'SELECT * FROM users WHERE id = {kwargs["user_id"]}')

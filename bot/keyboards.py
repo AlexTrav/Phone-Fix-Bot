@@ -485,6 +485,7 @@ def get_order_repair_manager_keyboard(order_id):
     is_processed = ['Не просмотрен', 'Просмотрен'][order_repair[4]]
     is_completed = ['Не выполнен', 'Выполнен'][order_repair[5]]
     answer = f'Заказ под номером: {order_repair[0]}\nЗаказан пользователем: {order_repair[1]}\nЗаказанная услуга: {repair[1]}\nНа модель: {model[2]}\nЦена услуги: {repair[3][1:]}₸\nСтатус просмотра: {is_processed}\nСтатус выполнения: {is_completed}'
+
     if order_repair[5] == 0:
         order_repair_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
             [InlineKeyboardButton(text='Выполнить', callback_data=cb.new(id=order_repair[0], action='execute'))],

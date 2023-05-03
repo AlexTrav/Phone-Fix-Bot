@@ -12,7 +12,10 @@ from bot.db.database import db
 # Обработка команды "start"
 @dp.message_handler(commands=['start'], state='*')
 async def start_cmd(message: types.Message, state: FSMContext):
-    db.check_user(user_id=message.from_user.id, user_name=message.from_user.username, fl_name=message.from_user.first_name + ' ' + message.from_user.last_name)
+    if message.from_user.first_name and message.from_user.last_name:
+        db.check_user(user_id=message.from_user.id, user_name=message.from_user.username, fl_name=message.from_user.first_name + ' ' + message.from_user.last_name)
+    else:
+        db.check_user(user_id=message.from_user.id, user_name=message.from_user.username, fl_name='')
     status_id = db.get_status_id(user_id=message.from_user.id)
     delete_all_states()
     # USER

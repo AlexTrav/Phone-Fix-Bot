@@ -8,7 +8,6 @@ from bot.keyboards import *
 
 
 # Переключатель состояний
-
 async def set_state():
 
     # USER
@@ -333,7 +332,7 @@ async def open_desire(callback: types.CallbackQuery, callback_data: dict):
 async def select_order_repair(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         await set_state()
-        ans, kb = get_keyboard(STATES_LIST[-2])
+        ans, kb = get_keyboard(STATES_LIST[-2], user_id=callback.from_user.id)
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
         delete_state()
@@ -942,7 +941,7 @@ async def open_users(callback: types.CallbackQuery, state: FSMContext):
 async def open_user(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         await set_state()
-        ans, kb = get_keyboard(STATES_LIST[-2])
+        ans, kb = get_keyboard(STATES_LIST[-2]) #??????
         await callback.message.edit_text(text=ans,
                                          reply_markup=kb)
         delete_state()
