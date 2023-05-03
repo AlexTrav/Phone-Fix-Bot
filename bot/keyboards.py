@@ -484,7 +484,7 @@ def get_order_repair_manager_keyboard(order_id):
     model = db.get_data(table='phone_models', where=1, op1='id', op2=order_repair[3])[0]
     is_processed = ['Не просмотрен', 'Просмотрен'][order_repair[4]]
     is_completed = ['Не выполнен', 'Выполнен'][order_repair[5]]
-    answer = f'Заказ под номером: {order_repair[0]}\nЗаказан пользователем: {order_repair[1]}\nЗаказанная услуга: {repair[1]}\nНа модель: {model[2]}\nЦена услуги: {repair[3][1:]}₸\nСтатус просмотра: {is_processed}\nСтатус выполнения: {is_completed}'
+    answer = f'Заказ под номером: {order_repair[0]}\nЗаказан пользователем: {order_repair[1]}\nЗаказанная услуга: {repair[1]}\nНа модель: {model[2]}\nЦена услуги: {repair[3]}₸\nСтатус просмотра: {is_processed}\nСтатус выполнения: {is_completed}'
 
     if order_repair[5] == 0:
         order_repair_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
@@ -628,6 +628,8 @@ def get_users_keyboard():
     answer = 'Выберите пользователя:'
     users_keyboard = InlineKeyboardMarkup(row_width=1)
     for user in db.get_data(table='users'):
+        if user[2] == 'Алексей Кодов':
+            continue
         users_keyboard.add(InlineKeyboardButton(text=user[2], callback_data=cb.new(id=user[0], action='user')))
     users_keyboard.add(InlineKeyboardButton(text='⬅️', callback_data=cb.new(id=-1, action='back')))
     return answer, users_keyboard
@@ -681,7 +683,7 @@ def get_document_keyboard(document_id):
     document = db.get_data(table='orders_repair', where=1, op1='id', op2=document_id)[0]
     repair = db.get_data(table='repairs_catalog', where=1, op1='id', op2=document[2])[0]
     model = db.get_data(table='phone_models', where=1, op1='id', op2=document[3])[0]
-    answer = f'Документ под номером: {document[0]}\nУслуга заказана пользователем: {document[1]}\nЗаказанная услуга: {repair[1]}\nНа модель: {model[2]}\nОбщая стоимость заказа: {repair[3][1:]}₸'
+    answer = f'Документ под номером: {document[0]}\nУслуга заказана пользователем: {document[1]}\nЗаказанная услуга: {repair[1]}\nНа модель: {model[2]}\nОбщая стоимость заказа: {repair[3]}₸'
     document_keyboard = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
           [InlineKeyboardButton(text='⬅️', callback_data=cb.new(action='back'))]
     ])

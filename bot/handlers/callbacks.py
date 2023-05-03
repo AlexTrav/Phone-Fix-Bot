@@ -210,12 +210,13 @@ async def open_accessory(callback: types.CallbackQuery, callback_data: dict, sta
         delete_state()
     elif callback_data['action'] == 'sort_default' or callback_data['action'] == 'sort_asc' or callback_data['action'] == 'sort_desc':
         answer = set_sorting_answer(callback_data['action'])
+        await callback.answer(answer)
         if answer[-1] != '!':
             async with state.proxy() as data:
                 ans, kb = get_accessories_keyboard(data['catalog_id'])
-            await callback.message.edit_text(text=ans,
-                                             reply_markup=kb)
-        await callback.answer(answer)
+            await callback.message.delete()
+            await callback.message.answer(text=ans,
+                                          reply_markup=kb)
     else:
         await UserStatesGroup.accessory.set()
         add_state(await state.get_state())
@@ -277,7 +278,8 @@ async def select_orders(callback: types.CallbackQuery, callback_data: dict, stat
         add_state(await state.get_state())
         ans, kb = get_desired_keyboard(callback.from_user.id)
         await callback.message.edit_text(text=ans,
-                                         reply_markup=kb)
+                                         reply_markup=kb,
+                                         parse_mode='HTML')
     else:
         await UserStatesGroup.orders_repair.set()
         add_state(await state.get_state())
