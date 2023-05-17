@@ -200,8 +200,6 @@ class DataBase:
         self.cursor.execute(f'INSERT INTO permissions(user_id, status_id) VALUES ({kwargs["user_id"]}, 2)')
         self.conn.commit()
 
-    # Ветка документов
-
 
 # Экземпляр базы данных
 db = DataBase()
