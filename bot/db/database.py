@@ -33,10 +33,8 @@ class DataBase:
             self.conn.commit()
         else:
             self.cursor.execute(f'SELECT * FROM users WHERE id = {kwargs["user_id"]}')
-            user = self.cursor.fetchall()
-            if not user:
-                self.cursor.execute(
-                    f'INSERT INTO users(id, user_name, fl_name) VALUES ({kwargs["user_id"]}, "{kwargs["user_name"]}", "{kwargs["fl_name"]}")')
+            if not self.cursor.fetchall():
+                self.cursor.execute(f'INSERT INTO users(id, user_name, fl_name) VALUES ({kwargs["user_id"]}, "{kwargs["user_name"]}", "{kwargs["fl_name"]}")')
                 self.conn.commit()
 
     # Вернуть статус user-а
@@ -52,8 +50,7 @@ class DataBase:
         self.cursor.execute(f'SELECT * FROM orders_repair WHERE user_id = {kwargs["user_id"]}')
         user_notes = self.cursor.fetchall()
         if len(user_notes) < 3:
-            self.cursor.execute(
-                f'INSERT INTO orders_repair(user_id, repair_id, model_id) VALUES ({kwargs["user_id"]}, {kwargs["repair_id"]}, {kwargs["model_id"]})')
+            self.cursor.execute(f'INSERT INTO orders_repair(user_id, repair_id, model_id) VALUES ({kwargs["user_id"]}, {kwargs["repair_id"]}, {kwargs["model_id"]})')
             self.conn.commit()
             return 'Заказ оформлен!'
         else:
