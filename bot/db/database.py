@@ -47,14 +47,9 @@ class DataBase:
 
     # Добавить запись в заказы услуг
     def insert_orders_repair(self, **kwargs):
-        self.cursor.execute(f'SELECT * FROM orders_repair WHERE user_id = {kwargs["user_id"]}')
-        user_notes = self.cursor.fetchall()
-        if len(user_notes) < 3:
-            self.cursor.execute(f'INSERT INTO orders_repair(user_id, repair_id, model_id) VALUES ({kwargs["user_id"]}, {kwargs["repair_id"]}, {kwargs["model_id"]})')
-            self.conn.commit()
-            return 'Заказ оформлен!'
-        else:
-            return 'Нельзя заказывать больше трёх услуг!'
+        self.cursor.execute(f'INSERT INTO orders_repair(user_id, repair_id, model_id) VALUES ({kwargs["user_id"]}, {kwargs["repair_id"]}, {kwargs["model_id"]})')
+        self.conn.commit()
+        return 'Заказ оформлен!'
 
     # Ветка аксессуаров
 
